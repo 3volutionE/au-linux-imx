@@ -23,6 +23,8 @@
 #define AT803X_INTR_STATUS			0x13
 #define AT803X_SMART_SPEED			0x14
 #define AT803X_LED_CONTROL			0x18
+
+#define AT803X_INTR_LINK_MASK		(BIT(10) | BIT(11))
 #define AT803X_WOL_ENABLE			0x01
 #define AT803X_DEVICE_ADDR			0x03
 #define AT803X_LOC_MAC_ADDR_0_15_OFFSET		0x804C
@@ -235,6 +237,7 @@ static int at803x_ack_interrupt(struct phy_device *phydev)
 {
 	int err;
 
+	/* bit[7..0] int status, which is a read and clear register. */
 	err = phy_read(phydev, AT803X_INSR);
 
 	return (err < 0) ? err : 0;
@@ -246,12 +249,14 @@ static int at803x_config_intr(struct phy_device *phydev)
 	int value;
 
 	value = phy_read(phydev, AT803X_INER);
+	if (value < 0)
+		value = 0;
 
-	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
-		err = phy_write(phydev, AT803X_INER,
-				value | AT803X_INER_INIT);
+	if (PHY_INTERRUPT_ENABLED == phydev->interrupts)
+		value |= AT803X_INTR_LINK_MASK;
 	else
-		err = phy_write(phydev, AT803X_INER, 0);
+		value &= ~AT803X_INTR_LINK_MASK;
+	err = phy_write(phydev, AT803X_INER, value);
 
 	return err;
 }
@@ -308,6 +313,8 @@ static struct phy_driver at803x_driver[] = {
 	.flags			= PHY_HAS_INTERRUPT,
 	.config_aneg		= genphy_config_aneg,
 	.read_status		= genphy_read_status,
+	.ack_interrupt		= at803x_ack_interrupt,
+	.config_intr		= at803x_config_intr,
 	.driver			= {
 		.owner = THIS_MODULE,
 	},
@@ -327,6 +334,8 @@ static struct phy_driver at803x_driver[] = {
 	.flags			= PHY_HAS_INTERRUPT,
 	.config_aneg		= genphy_config_aneg,
 	.read_status		= genphy_read_status,
+	.ack_interrupt		= at803x_ack_interrupt,
+	.config_intr		= at803x_config_intr,
 	.driver			= {
 		.owner = THIS_MODULE,
 	},
@@ -348,6 +357,8 @@ static struct phy_driver at803x_driver[] = {
 	.read_status		= genphy_read_status,
 	.ack_interrupt		= &at803x_ack_interrupt,
 	.config_intr		= &at803x_config_intr,
+	.ack_interrupt		= at803x_ack_interrupt,
+	.config_intr		= at803x_config_intr,
 	.driver			= {
 		.owner = THIS_MODULE,
 	},
