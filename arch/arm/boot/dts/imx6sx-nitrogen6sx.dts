@@ -344,6 +344,8 @@
 			MX6SX_PAD_SD3_DATA1__USDHC3_DATA1	0x17071
 			MX6SX_PAD_SD3_DATA2__USDHC3_DATA2	0x17071
 			MX6SX_PAD_SD3_DATA3__USDHC3_DATA3	0x17071
+#define GPIRQ_WL1271 	<&gpio7 7 IRQ_TYPE_LEVEL_HIGH>
+			MX6SX_PAD_SD3_DATA5__GPIO7_IO_7		0x1b0b0
 		>;
 	};
 
@@ -394,8 +396,6 @@
 
 	pinctrl_wlan:wlangrp {
 		fsl,pins = <
-#define GP_WLAN_INT 	<&gpio7 7 IRQ_TYPE_LEVEL_HIGH>
-			MX6SX_PAD_SD3_DATA5__GPIO7_IO_7		0x1b0b0
 		>;
 	};
 };
@@ -527,22 +527,6 @@
 		mux-int-port = <1>;
 		mux-ext-port = <5>;
 		line-out-mute-gpios = GP_SGTL5000_MUTE;
-	};
-
-	wlan {
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wlan>;
-		compatible = "ti,wilink6";
-		clocks = <&refclock>;
-		clock-names = "refclock";
-		interrupts-extended = GP_WLAN_INT;
-		status = "okay";
-
-		refclock: refclock {
-			compatible = "ti,wilink-clock";
-			#clock-cells = <0>;
-			clock-frequency = <38400000>;
-		};
 	};
 };
 
@@ -927,6 +911,15 @@
 	cap-sdio-irq;
 	vqmmc-1-8-v;
 	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wlcore: wlcore@2 {
+		compatible = "ti,wl1271";
+		interrupts-extended = GPIRQ_WL1271;
+		reg = <2>;
+		ref-clock-frequency = <38400000>;
+	};
 };
 
 &usdhc4 {
