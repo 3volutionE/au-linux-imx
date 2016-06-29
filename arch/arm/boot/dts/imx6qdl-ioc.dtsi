@@ -334,6 +334,8 @@
 			MX6QDL_PAD_SD2_DAT2__SD2_DATA2		0x17071
 			MX6QDL_PAD_SD2_DAT3__SD2_DATA3		0x17071
 			MX6QDL_PAD_SD1_CLK__OSC32K_32K_OUT	0x000b0		/* slow clock */
+#define GPIRQ_WL1271	<&gpio6 14 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_CS1__GPIO6_IO14	0x100b0
 		>;
 	};
 
@@ -362,13 +364,6 @@
 			MX6QDL_PAD_SD4_DAT3__SD4_DATA3		0x17061
 #define GP_USDHC4_CD	<&gpio2 6 GPIO_ACTIVE_LOW>
 			MX6QDL_PAD_NANDF_D6__GPIO2_IO06		0x1b0b0
-		>;
-	};
-
-	pinctrl_wl1271: wl1271grp {
-		fsl,pins = <
-#define GPIRQ_WL1271	<&gpio6 14 IRQ_TYPE_LEVEL_HIGH>
-			MX6QDL_PAD_NANDF_CS1__GPIO6_IO14	0x100b0
 		>;
 	};
 };
@@ -633,21 +628,6 @@
 	v4l2_out {
 		compatible = "fsl,mxc_v4l2_output";
 		status = "okay";
-	};
-
-	wl1271 {
-		compatible = "ti,wilink6";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wl1271>;
-		interrupts-extended = GPIRQ_WL1271; 
-		clocks = <&refclock>;
-		clock-names = "refclock";
-
-		refclock: refclock {
-			compatible = "ti,wilink-clock";
-			#clock-cells = <0>;
-			clock-frequency = <38400000>;
-		};
 	};
 };
 
@@ -1003,6 +983,15 @@
 	cap-power-off-card;
 	keep-power-in-suspend;
 	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wlcore: wlcore@2 {
+		compatible = "ti,wl1271";
+		interrupts-extended = GPIRQ_WL1271;
+		reg = <2>;
+		ref-clock-frequency = <38400000>;
+	};
 };
 
 /* eMMC */
