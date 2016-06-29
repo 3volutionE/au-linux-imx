@@ -331,7 +331,7 @@
 	};
 
 	bt_rfkill {
-		bt_rfkill_reset-gpios = GP_BT_RFKILL_RESET;
+		reset-gpios = GP_BT_RFKILL_RESET;
 		compatible = "net,rfkill-gpio";
 		name = "bt_rfkill";
 		pinctrl-names = "default";
