@@ -143,19 +143,6 @@
 		assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
 		assigned-clock-rates = <0>, <12288000>;
 	};
-
-	wl1271 {
-		compatible = "ti,wilink6";
-		interrupts-extended = <&gpio4 20 IRQ_TYPE_LEVEL_HIGH>;
-		clocks = <&refclock>;
-		clock-names = "refclock";
-
-		refclock: refclock {
-			compatible = "ti,wilink-clock";
-			#clock-cells = <0>;
-			clock-frequency = <38400000>;
-		};
-	};
 };
 
 &clks {
@@ -735,6 +722,7 @@
 				MX7D_PAD_SD2_DATA1__SD2_DATA1   	0x59
 				MX7D_PAD_SD2_DATA2__SD2_DATA2   	0x59
 				MX7D_PAD_SD2_DATA3__SD2_DATA3   	0x59
+#define GPIRQ_WL1271	<&gpio4 20 IRQ_TYPE_LEVEL_HIGH>
 				MX7D_PAD_ECSPI2_SCLK__GPIO4_IO20	0x59 /* WL_HOST_WAKE */
 				MX7D_PAD_ECSPI2_MOSI__GPIO4_IO21	0x59 /* WL_REG_ON */
 			>;
@@ -971,6 +959,15 @@
 	cap-power-off-card;
 	keep-power-in-suspend;
 	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wlcore: wlcore@2 {
+		compatible = "ti,wl1271";
+		interrupts-extended = GPIRQ_WL1271;
+		reg = <2>;
+		ref-clock-frequency = <38400000>;
+	};
 };
 
 &usdhc3 {
