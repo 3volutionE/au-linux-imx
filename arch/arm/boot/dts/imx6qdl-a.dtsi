@@ -208,7 +208,7 @@
 		j57_input {
 			label = "j57 input";
 			gpios = GP_J57_INPUT;
-			linux,code = <KEY_HOME>;
+			linux,code = <KEY_HOMEPAGE>;
 		};
 
 		s1_loop {
