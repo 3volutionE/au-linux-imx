@@ -422,7 +422,7 @@
 	sync {
 		label = "sync";
 		gpios = GP_SYNC_IRQ;
-		linux,code = <KEY_HOME>;
+		linux,code = <KEY_HOMEPAGE>;
 	};
 
 	heater_fault {
