@@ -297,9 +297,9 @@
 		>;
 	};
 
-	pinctrl_wlan:wlangrp {
+	pinctrl_usdhc2_wlan:wlangrp {
 		fsl,pins = <
-#define GPIRQ_WLAN 		<&gpio2 14 IRQ_TYPE_LEVEL_HIGH>
+#define GPIRQ_WL1271 		<&gpio2 14 IRQ_TYPE_LEVEL_HIGH>
 			MX6SX_PAD_KEY_COL4__GPIO2_IO_14		0x130b0
 #define GP_WLAN_CLK_REQ		<&gpio2 12 GPIO_ACTIVE_HIGH>
 			MX6SX_PAD_KEY_COL2__GPIO2_IO_12		0x130b0
@@ -461,22 +461,6 @@
 			regulator-max-microvolt = <3300000>;
 			regulator-name = "wlan-en";
 			startup-delay-us = <70000>;
-		};
-	};
-
-	wlan {
-		clocks = <&refclock>;
-		clock-names = "refclock";
-		compatible = "ti,wilink6";
-		interrupts-extended = GPIRQ_WLAN;
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wlan>;
-		status = "okay";
-
-		refclock: refclock {
-			compatible = "ti,wilink-clock";
-			#clock-cells = <0>;
-			clock-frequency = <38400000>;
 		};
 	};
 };
@@ -956,4 +940,15 @@
 	cap-sdio-irq;
 	vqmmc-1-8-v;
 	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wlcore: wlcore@2 {
+		compatible = "ti,wl1271";
+		interrupts-extended = GPIRQ_WL1271;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usdhc2_wlan>;
+		reg = <2>;
+		ref-clock-frequency = <38400000>;
+	};
 };
