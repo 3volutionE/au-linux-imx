@@ -421,6 +421,14 @@
 		reg = <0x10000000 0x80000000>;
 	};
 
+	mipi_mclk: mipi_mclk {
+		compatible = "pwm-clock";
+		#clock-cells = <0>;
+		clock-frequency = <22000000>;
+		clock-output-names = "mipi_mclk";
+		pwms = <&pwm3 0 45>; /* 1 / 45 ns = 22 MHz */
+	};
+
 	regulators {
 		compatible = "simple-bus";
 		#address-cells = <1>;
@@ -637,7 +645,7 @@
 		reg = <0x3c>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c2_ov5640_mipi>;
-		clocks = <&clks IMX6QDL_CLK_PWM3>;
+		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
 		DOVDD-supply = <&reg_1p8v>;
 		AVDD-supply = <&reg_2p5v>;
@@ -648,7 +656,6 @@
 		csi_id = <1>;
 		mclk = <22000000>;
 		mclk_source = <0>;
-		pwms = <&pwm3 0 45>;
 	};
 };
 
