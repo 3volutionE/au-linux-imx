@@ -429,7 +429,7 @@
 		pinctrl-0 = <&pinctrl_bt_rfkill>;
 		name = "bt_rfkill";
 		type = <2>;     /* bluetooth */
-		bt_rfkill_reset-gpios = GP_BT_RFKILL_RESET;
+		reset-gpios = GP_BT_RFKILL_RESET;
 	};
 
 	clocks {
