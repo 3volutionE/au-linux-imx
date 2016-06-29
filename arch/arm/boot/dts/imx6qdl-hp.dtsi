@@ -390,6 +390,19 @@
 		>;
 	};
 
+	pinctrl_usdhc2_wlan:wlangrp {
+		fsl,pins = <
+#define GPIRQ_WL1271	<&gpio6 11 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_CS0__GPIO6_IO11	0x100b0
+#define GP_WIFI_QOW	<&gpio2 3 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_D3__GPIO2_IO03		0x100b0
+#define GP_WIFI_CLK_REQ	<&gpio2 4 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_D4__GPIO2_IO04		0x100b0
+#define GPIRQ_BT_HOST_WAKE	<&gpio6 10 IRQ_TYPE_LEVEL_HIGH>
+			MX6QDL_PAD_NANDF_RB0__GPIO6_IO10	0x100b0
+		>;
+	};
+
 	pinctrl_usdhc4: usdhc4grp {
 		fsl,pins = <
 			MX6QDL_PAD_SD4_CLK__SD4_CLK		0x10031
@@ -402,19 +415,6 @@
 			MX6QDL_PAD_SD4_DAT5__SD4_DATA5		0x17031
 			MX6QDL_PAD_SD4_DAT6__SD4_DATA6		0x17031
 			MX6QDL_PAD_SD4_DAT7__SD4_DATA7		0x17031
-		>;
-	};
-
-	pinctrl_wl1271: wl1271grp {
-		fsl,pins = <
-#define GPIRQ_WIFI	<&gpio6 11 IRQ_TYPE_LEVEL_HIGH>
-			MX6QDL_PAD_NANDF_CS0__GPIO6_IO11	0x100b0
-#define GP_WIFI_QOW	<&gpio2 3 IRQ_TYPE_LEVEL_HIGH>
-			MX6QDL_PAD_NANDF_D3__GPIO2_IO03		0x100b0
-#define GP_WIFI_CLK_REQ	<&gpio2 4 IRQ_TYPE_LEVEL_HIGH>
-			MX6QDL_PAD_NANDF_D4__GPIO2_IO04		0x100b0
-#define GPIRQ_BT_HOST_WAKE	<&gpio6 10 IRQ_TYPE_LEVEL_HIGH>
-			MX6QDL_PAD_NANDF_RB0__GPIO6_IO10	0x100b0
 		>;
 	};
 };
@@ -659,21 +659,6 @@
 	v4l2_out {
 		compatible = "fsl,mxc_v4l2_output";
 		status = "okay";
-	};
-
-	wl1271 {
-		compatible = "ti,wilink6";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_wl1271>, <&pinctrl_audmux4>;
-		interrupts-extended = GPIRQ_WIFI;
-		clocks = <&refclock>;
-		clock-names = "refclock";
-
-		refclock: refclock {
-			compatible = "ti,wilink-clock";
-			#clock-cells = <0>;
-			clock-frequency = <38400000>;
-		};
 	};
 };
 
@@ -1020,6 +1005,17 @@
 	cap-power-off-card;
 	keep-power-in-suspend;
 	status = "okay";
+
+	#address-cells = <1>;
+	#size-cells = <0>;
+	wlcore: wlcore@2 {
+		compatible = "ti,wl1271";
+		interrupts-extended = GPIRQ_WL1271;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usdhc2_wlan>, <&pinctrl_audmux4>;
+		reg = <2>;
+		ref-clock-frequency = <38400000>;
+	};
 };
 
 &usdhc4 {
