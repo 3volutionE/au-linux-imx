@@ -22,6 +22,10 @@
 	compatible = "fsl,imx6q-jlm", "fsl,imx6q";
 };
 
+&hdmi_core {
+	ipu_id = <1>;
+};
+
 &sata {
 	status = "okay";
 };
