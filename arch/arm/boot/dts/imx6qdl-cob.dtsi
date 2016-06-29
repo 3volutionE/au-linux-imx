@@ -292,7 +292,7 @@
 		home {
 			label = "Home";
 			gpios = GP_GPIOKEYS_HOME;
-			linux,code = <KEY_HOME>;
+			linux,code = <KEY_HOMEPAGE>;
 		};
 
 		pb1 {
