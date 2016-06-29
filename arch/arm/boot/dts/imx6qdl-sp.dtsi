@@ -38,7 +38,7 @@
 		type = <2>;     /* bluetooth */
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_bt_rfkill>;
-		bt_rfkill_reset-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio6 8 GPIO_ACTIVE_LOW>;
 		bt_rfkill_shutdown-gpios = <&gpio6 15 GPIO_ACTIVE_LOW>;
 	};
 
