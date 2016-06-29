@@ -24,10 +24,6 @@
 		t_lcd = &t_lcd;
 	};
 
-	memory {
-		reg = <0x80000000 0x40000000>;
-	};
-
 	backlight_j9 {
 		compatible = "gpio-backlight";
 		pinctrl-names = "default";
@@ -52,6 +48,18 @@
 		type = <2>;     /* bluetooth */
 		reset-gpios = <&gpio4 23 GPIO_ACTIVE_LOW>;
 		clocks = <&clks IMX7D_CLKO2_ROOT_DIV>;
+	};
+
+	memory {
+		reg = <0x80000000 0x40000000>;
+	};
+
+	mipi_mclk: mipi_mclk {
+		compatible = "pwm-clock";
+		#clock-cells = <0>;
+		clock-frequency = <22000000>;
+		clock-output-names = "mipi_mclk";
+		pwms = <&pwm2 0 45>; /* 1 / 45 ns = 22 MHz */
 	};
 
 	pxp_v4l2_out {
@@ -364,7 +372,7 @@
 		reg = <0x3c>;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_mipi_csi>;
-		clocks = <&clks IMX7D_CLK_DUMMY>;
+		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
 		DOVDD-supply = <&reg_vref_1v8>;
 		AVDD-supply = <&reg_vref_2v5>;
@@ -372,9 +380,8 @@
 		pwn-gpios = <&gpio1 13 GPIO_ACTIVE_HIGH>;
 		rst-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
 		csi_id = <0>;
-		mclk = <24576000>;
+		mclk = <22000000>;
 		mclk_source = <0>;
-		pwms = <&pwm2 0 40>;
 		port {
 			ov5640_mipi_ep: endpoint {
 				remote-endpoint = <&mipi_sensor_ep>;
