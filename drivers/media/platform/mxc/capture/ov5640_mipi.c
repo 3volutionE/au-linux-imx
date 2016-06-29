@@ -30,7 +30,6 @@
 #include <linux/of_gpio.h>
 #include <linux/pinctrl/consumer.h>
 #include <linux/proc_fs.h>
-#include <linux/pwm.h>
 #include <linux/regmap.h>
 #include <linux/regulator/consumer.h>
 #include <linux/fsl_devices.h>
@@ -3441,7 +3440,6 @@ static DEVICE_ATTR(ov5640_reg, S_IRUGO|S_IWUSR|S_IWGRP, show_reg, set_reg);
 static int ov5640_probe(struct i2c_client *client,
 			const struct i2c_device_id *id)
 {
-	struct pwm_device *pwm;
 	struct device *dev = &client->dev;
 	int retval;
 	u8 chip_id_high, chip_id_low;
@@ -3525,13 +3523,6 @@ static int ov5640_probe(struct i2c_client *client,
 	ov5640_data.streamcap.capturemode = 0;
 	ov5640_data.streamcap.timeperframe.denominator = DEFAULT_FPS;
 	ov5640_data.streamcap.timeperframe.numerator = 1;
-
-	pwm = pwm_get(dev, NULL);
-	if (!IS_ERR(pwm)) {
-		dev_info(dev, "found pwm%d, period=%d\n", pwm->pwm, pwm->period);
-		pwm_config(pwm, pwm->period >> 1, pwm->period);
-		pwm_enable(pwm);
-	}
 
 	ov5640_power_on(dev);
 
