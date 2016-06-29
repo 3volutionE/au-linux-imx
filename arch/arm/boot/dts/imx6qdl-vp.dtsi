@@ -1001,6 +1001,6 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wlan_bt_rfkill>;
 	type = <2>;     /* bluetooth */
-	bt_rfkill_reset-gpios = GP_BRM_BT_RESET;
+	reset-gpios = GP_BRM_BT_RESET;
 	bt_rfkill_shutdown-gpios = GP_BRM_BT_SHUTDOWN;
 };
