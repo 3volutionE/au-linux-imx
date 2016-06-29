@@ -50,7 +50,7 @@
 		pinctrl-0 = <&pinctrl_bt_rfkill>;
 		name = "bt_rfkill";
 		type = <2>;     /* bluetooth */
-		bt_rfkill_reset-gpios = <&gpio4 23 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio4 23 GPIO_ACTIVE_LOW>;
 		clocks = <&clks IMX7D_CLKO2_ROOT_DIV>;
 	};
 
