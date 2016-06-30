@@ -1798,6 +1798,7 @@ int32_t ipu_init_sync_panel(struct ipu_soc *ipu, int disp, uint32_t pixel_clk,
 	uint32_t bt656_h_start_width = 0;
 	uint32_t bt656_v_start_width_field0 = 0, bt656_v_end_width_field0 = 0;
 	uint32_t bt656_v_start_width_field1 = 0, bt656_v_end_width_field1 = 0;
+	bool special;
 
 	dev_dbg(ipu->dev, "panel size = %d x %d\n", width, height);
 
@@ -1886,11 +1887,12 @@ int32_t ipu_init_sync_panel(struct ipu_soc *ipu, int disp, uint32_t pixel_clk,
 		return PTR_ERR(ldb_di1_clk);
 	}
 
+	special = !strcmp(__clk_get_name(di_parent), __clk_get_name(ldb_di0_clk)) ||
+		  !strcmp(__clk_get_name(di_parent), __clk_get_name(ldb_di1_clk)) ||
+		  !rem;
 	clk_put(ldb_di0_clk);
 	clk_put(ldb_di1_clk);
-	if (!strcmp(__clk_get_name(di_parent), __clk_get_name(ldb_di0_clk)) ||
-		!strcmp(__clk_get_name(di_parent), __clk_get_name(ldb_di1_clk)) ||
-		!rem) {
+	if (special) {
 		/* if di clk parent is tve/ldb, then keep it;*/
 		dev_info(ipu->dev, "use special clk parent\n");
 		ret = clk_set_parent(ipu->pixel_clk_sel[disp], ipu->di_clk[disp]);
