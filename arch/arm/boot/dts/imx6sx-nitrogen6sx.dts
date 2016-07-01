@@ -393,11 +393,6 @@
 			MX6SX_PAD_SD4_DATA7__USDHC4_DATA7	0x170f9
 		>;
 	};
-
-	pinctrl_wlan:wlangrp {
-		fsl,pins = <
-		>;
-	};
 };
 
 / {
