@@ -182,15 +182,13 @@
 	};
 };
 
-&ecspi1 {
-	fsl,spi-num-chipselects = <1>;
-	cs-gpios = <&gpio2 6 GPIO_ACTIVE_LOW>;
+&qspi1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_flash>;
 	status = "okay";
 
 	flash: m25p80@0 {
-		compatible = "sst,sst25vf016b";
+		compatible = "winbond,w25q128";
 		spi-max-frequency = <20000000>;
 		reg = <0>;
 		#address-cells = <1>;
@@ -494,10 +492,10 @@
 			fsl,pins = <
 				MX7D_PAD_EPDC_DATA00__QSPI_A_DATA0	0x71
 				MX7D_PAD_EPDC_DATA01__QSPI_A_DATA1	0x71
-				MX7D_PAD_EPDC_DATA02__GPIO2_IO2		0x7d
-				MX7D_PAD_EPDC_DATA03__GPIO2_IO3		0x7d
+				MX7D_PAD_EPDC_DATA02__QSPI_A_DATA2	0x71
+				MX7D_PAD_EPDC_DATA03__QSPI_A_DATA3	0x71
 				MX7D_PAD_EPDC_DATA05__QSPI_A_SCLK	0x71
-				MX7D_PAD_EPDC_DATA06__GPIO2_IO6		0x71
+				MX7D_PAD_EPDC_DATA06__QSPI_A_SS0_B	0x71
 			>;
 		};
 
