@@ -24,7 +24,6 @@
 #define AT803X_SMART_SPEED			0x14
 #define AT803X_LED_CONTROL			0x18
 
-#define AT803X_INTR_LINK_MASK		(BIT(10) | BIT(11))
 #define AT803X_WOL_ENABLE			0x01
 #define AT803X_DEVICE_ADDR			0x03
 #define AT803X_LOC_MAC_ADDR_0_15_OFFSET		0x804C
@@ -252,10 +251,10 @@ static int at803x_config_intr(struct phy_device *phydev)
 	if (value < 0)
 		value = 0;
 
-	if (PHY_INTERRUPT_ENABLED == phydev->interrupts)
-		value |= AT803X_INTR_LINK_MASK;
+	if (phydev->interrupts == PHY_INTERRUPT_ENABLED)
+		value |= AT803X_INER_INIT;
 	else
-		value &= ~AT803X_INTR_LINK_MASK;
+		value &= ~AT803X_INER_INIT;
 	err = phy_write(phydev, AT803X_INER, value);
 
 	return err;
@@ -355,8 +354,6 @@ static struct phy_driver at803x_driver[] = {
 	.flags			= PHY_HAS_INTERRUPT,
 	.config_aneg		= genphy_config_aneg,
 	.read_status		= genphy_read_status,
-	.ack_interrupt		= &at803x_ack_interrupt,
-	.config_intr		= &at803x_config_intr,
 	.ack_interrupt		= at803x_ack_interrupt,
 	.config_intr		= at803x_config_intr,
 	.driver			= {
