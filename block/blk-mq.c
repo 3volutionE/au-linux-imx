@@ -1700,7 +1700,6 @@ static void blk_mq_init_cpu_queues(struct request_queue *q,
 		struct blk_mq_ctx *__ctx = per_cpu_ptr(q->queue_ctx, i);
 		struct blk_mq_hw_ctx *hctx;
 
-		memset(__ctx, 0, sizeof(*__ctx));
 		__ctx->cpu = i;
 		spin_lock_init(&__ctx->lock);
 		INIT_LIST_HEAD(&__ctx->rq_list);
@@ -1963,6 +1962,9 @@ struct request_queue *blk_mq_init_allocated_queue(struct blk_mq_tag_set *set,
 	if (!q->queue_ctx)
 		goto err_exit;
 
+	/* init q->mq_kobj and sw queues' kobjects */
+	blk_mq_sysfs_init(q);
+
 	q->queue_hw_ctx = kzalloc_node(nr_cpu_ids * sizeof(*(q->queue_hw_ctx)),
 						GFP_KERNEL, set->numa_node);
 	if (!q->queue_hw_ctx)
@@ -2005,15 +2007,15 @@ struct request_queue *blk_mq_init_allocated_queue(struct blk_mq_tag_set *set,
 
 	blk_mq_init_cpu_queues(q, set->nr_hw_queues);
 
-	get_online_cpus();
 	mutex_lock(&all_q_mutex);
+	get_online_cpus();
 
 	list_add_tail(&q->all_q_node, &all_q_list);
 	blk_mq_add_queue_tag_set(set, q);
 	blk_mq_map_swqueue(q, cpu_online_mask);
 
-	mutex_unlock(&all_q_mutex);
 	put_online_cpus();
+	mutex_unlock(&all_q_mutex);
 
 	return q;
 
