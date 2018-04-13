@@ -13,14 +13,14 @@
 
 	aliases {
 		fb_mipi_dsi = &fb_mipi_dsi;
-		pwm_mipi_dsi = &pwm1;
+		pwm_mipi_dsi = &pwm3;
 	};
 
 	backlight_mipi_dsi: backlight_mipi_dsi {
 		compatible = "pwm-backlight";
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10>;
 		default-brightness-level = <8>;
-		pwms = <&pwm1 0 30000>;
+		pwms = <&pwm3 0 30000>;
 	};
 
 	bt-rfkill {
@@ -36,6 +36,14 @@
 	/* TODO */
 	extcon_usb_otg: extcon-usb-otg {
 		compatible = "linux,extcon-usb-gpio";
+	};
+
+	mipi_mclk: mipi_mclk {
+		compatible = "pwm-clock";
+		#clock-cells = <0>;
+		clock-frequency = <22000000>;
+		clock-output-names = "mipi_mclk";
+		pwms = <&pwm1 0 45>; /* 1 / 45 ns = 22 MHz */
 	};
 
 	reg_usb_host_vbus: regulator-usb-host-vbus {
@@ -60,18 +68,11 @@
 		enable-active-high;
 	};
 
-	reg_vref_1v8: regulator-vref-1v8 {
+	reg_vref_1v: regulator-vref-1v {
 		compatible = "regulator-fixed";
-		regulator-name = "vref-1v8";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-	};
-
-	reg_vref_3v3: regulator-vref-3v3 {
-		compatible = "regulator-fixed";
-		regulator-name = "vref-3v3";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
+		regulator-name = "vref-1v";
+		regulator-min-microvolt = <1000000>;
+		regulator-max-microvolt = <1000000>;
 	};
 
 	reg_wlan_vmmc: regulator-wlan-vmmc {
@@ -108,21 +109,6 @@
 		audio-cpu = <&sai4>;
 		protocol = <1>;
 	};
-
-	sound-spdif {
-		compatible = "fsl,imx-audio-spdif";
-		model = "imx-spdif";
-		spdif-controller = <&spdif1>;
-		spdif-out;
-		spdif-in;
-	};
-
-	sound-hdmi-arc {
-		compatible = "fsl,imx-audio-spdif";
-		model = "imx-hdmi-arc";
-		spdif-controller = <&spdif2>;
-		spdif-in;
-	};
 };
 
 &iomuxc {
@@ -143,7 +129,6 @@
 				MX8MQ_IOMUXC_GPIO1_IO02_GPIO1_IO2		0x19
 				MX8MQ_IOMUXC_GPIO1_IO05_GPIO1_IO5		0x19
 				MX8MQ_IOMUXC_NAND_READY_B_GPIO3_IO16		0x19
-				MX8MQ_IOMUXC_SPDIF_EXT_CLK_GPIO5_IO5		0x19
 			>;
 		};
 
@@ -261,7 +246,7 @@
 
 		pinctrl_pwm1: pwm1grp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO01_PWM1_OUT	0x16
+				MX8MQ_IOMUXC_SPDIF_EXT_CLK_PWM1_OUT	0x16
 			>;
 		};
 
@@ -623,22 +608,17 @@
 
 &i2c1c {
 	ov5640-mipi1@3c {
-		/* TODO */
 		compatible = "ovti,ov5640_mipi";
 		reg = <0x3c>;
 		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_csi1>;
-		clocks = <&clk IMX8MQ_CLK_CLKO2_DIV>;
+		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
-		assigned-clocks = <&clk IMX8MQ_CLK_CLKO2_SRC>,
-				  <&clk IMX8MQ_CLK_CLKO2_DIV>;
-		assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_200M>;
-		assigned-clock-rates = <0>, <20000000>;
 		csi_id = <0>;
 		pwn-gpios = <&gpio3 4 GPIO_ACTIVE_HIGH>;
 		rst-gpios = <&gpio3 5 GPIO_ACTIVE_HIGH>;
-		mclk = <20000000>;
+		mclk = <22000000>;
 		mclk_source = <0>;
 		port {
 			ov5640_mipi1_ep: endpoint {
@@ -665,22 +645,17 @@
 	status = "okay";
 
 	ov5640-mipi2@3c {
-		/* TODO */
 		compatible = "ovti,ov5640_mipi";
 		reg = <0x3c>;
-		status = "disabled";
+		status = "okay";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_csi2>;
-		clocks = <&clk IMX8MQ_CLK_CLKO2_DIV>;
+		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
-		assigned-clocks = <&clk IMX8MQ_CLK_CLKO2_SRC>,
-				  <&clk IMX8MQ_CLK_CLKO2_DIV>;
-		assigned-clock-parents = <&clk IMX8MQ_SYS2_PLL_200M>;
-		assigned-clock-rates = <0>, <20000000>;
-		csi_id = <0>;
+		csi_id = <1>;
 		pwn-gpios = <&gpio3 17 GPIO_ACTIVE_HIGH>;
 		rst-gpios = <&gpio3 18 GPIO_ACTIVE_HIGH>;
-		mclk = <20000000>;
+		mclk = <22000000>;
 		mclk_source = <0>;
 		port {
 			ov5640_mipi2_ep: endpoint {
@@ -936,6 +911,14 @@
 	status = "okay";
 };
 
+&sai4 {
+	assigned-clocks = <&clk IMX8MQ_CLK_SAI4_SRC>,
+			<&clk IMX8MQ_CLK_SAI4_DIV>;
+	assigned-clock-parents = <&clk IMX8MQ_AUDIO_PLL1_OUT>;
+	assigned-clock-rates = <0>, <24576000>;
+	status = "okay";
+};
+
 &sai5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_sai5>;
@@ -1026,7 +1009,7 @@
 };
 
 &vpu {
-	regulator-supply = <&reg_vref_1v8>;
+	regulator-supply = <&reg_vref_1v>;
 	status = "okay";
 };
 
