@@ -652,6 +652,7 @@
 	};
 
 	pcie-clock@6a {
+		compatible = "idt,9FGV0241AKILF";
 		/* TODO */
 		reg = <0x6a>;
 	};
@@ -672,6 +673,7 @@
 
 	/* TODO */
 	touchscreen@04 {
+		compatible = "touch_driver";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c4_touch>;
 		reg = <0x04>;
