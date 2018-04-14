@@ -41,17 +41,6 @@
 		pwms = <&pwm1 0 45>; /* 1 / 45 ns = 22 MHz */
 	};
 
-	reg_usb_host_vbus: regulator-usb-host-vbus {
-		compatible = "regulator-fixed";
-		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_reg_usbhost_vbus>;
-		regulator-name = "usb_host_vbus";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = <&gpio1 14 GPIO_ACTIVE_HIGH>;
-		enable-active-high;
-	};
-
 	reg_usb_otg_vbus: regulator-usb-otg-vbus {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
@@ -975,13 +964,13 @@
 };
 
 &usb3_1 {
+	reset-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 	status = "okay";
 };
 
 &usb_dwc3_1 {
 	status = "okay";
 	dr_mode = "host";
-	vbus-supply = <&reg_usb_host_vbus>;
 };
 
 &usdhc1 {
