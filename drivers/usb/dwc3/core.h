@@ -1106,6 +1106,8 @@ struct dwc3 {
 	unsigned		tx_de_emphasis_quirk:1;
 	unsigned		tx_de_emphasis:2;
 	struct usb_otg_caps otg_caps;
+
+	struct regulator	*vbus_reg;
 };
 
 #define work_to_dwc(w)		(container_of((w), struct dwc3, drd_work))
