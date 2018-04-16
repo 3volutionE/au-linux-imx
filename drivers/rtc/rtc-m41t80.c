@@ -989,7 +989,7 @@ static int m41t80_probe(struct i2c_client *client,
 		}
 	}
 #endif
-#ifdef CONFIG_COMMON_CLK
+#if 0
 	if (m41t80_data->features & M41T80_FEATURE_SQ)
 		m41t80_sqw_register_clk(m41t80_data);
 #endif
