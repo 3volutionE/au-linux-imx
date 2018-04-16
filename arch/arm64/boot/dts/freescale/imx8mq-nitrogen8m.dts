@@ -33,11 +33,6 @@
 		status = "okay";
 	};
 
-	/* TODO */
-	extcon_usb_otg: extcon-usb-otg {
-		compatible = "linux,extcon-usb-gpio";
-	};
-
 	mipi_mclk: mipi_mclk {
 		compatible = "pwm-clock";
 		#clock-cells = <0>;
@@ -972,7 +967,6 @@
 &usb_dwc3_0 {
 	status = "okay";
 	dr_mode = "otg";
-	extcon = <&extcon_usb_otg>;
 	vbus-supply = <&reg_usb_otg_vbus>;
 };
 
