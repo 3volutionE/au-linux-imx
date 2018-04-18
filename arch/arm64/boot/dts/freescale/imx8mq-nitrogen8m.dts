@@ -622,6 +622,7 @@
 		pinctrl-0 = <&pinctrl_i2c1d_rv4162>;
 		reg = <0x68>;
 		interrupts-extended = <&gpio1 6 IRQ_TYPE_LEVEL_LOW>;
+		wakeup-source;
 	};
 };
 
