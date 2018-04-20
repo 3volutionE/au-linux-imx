@@ -260,12 +260,6 @@
 			>;
 		};
 
-		pinctrl_reg_usbhost_vbus: reg-usbhost-vbusgrp {
-			fsl,pins = <
-				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x16
-			>;
-		};
-
 		pinctrl_reg_usbotg_vbus: reg-usbotg-vbusgrp {
 			fsl,pins = <
 				MX8MQ_IOMUXC_GPIO1_IO12_GPIO1_IO12	0x16
@@ -367,6 +361,12 @@
 			fsl,pins = <
 				MX8MQ_IOMUXC_UART4_RXD_UART4_DCE_RX		0x49
 				MX8MQ_IOMUXC_UART4_TXD_UART4_DCE_TX		0x49
+			>;
+		};
+
+		pinctrl_usb3_1: usb3-1grp {
+			fsl,pins = <
+				MX8MQ_IOMUXC_GPIO1_IO14_GPIO1_IO14		0x16
 			>;
 		};
 
@@ -967,6 +967,8 @@
 };
 
 &usb3_1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usb3_1>;
 	reset-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 	status = "okay";
 };
