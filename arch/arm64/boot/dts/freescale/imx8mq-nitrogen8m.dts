@@ -784,8 +784,23 @@
 		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
 		reset-gpio = <&gpio3 15 GPIO_ACTIVE_HIGH>;
 		dsi-lanes = <4>;
-		panel-width-mm = <68>;
-		panel-height-mm = <121>;
+		panel-width-mm = <108>;
+		panel-height-mm = <172>;
+
+		display-timings {
+			t_lvds: t_lvds_default {
+				clock-frequency = <159400000>;
+				hactive = <1200>;
+				vactive = <1920>;
+				hback-porch = <60>;
+				hfront-porch = <80>;
+				vback-porch = <25>;
+				vfront-porch = <35>;
+				hsync-len = <1>;
+				vsync-len = <1>;
+			};
+		};
+
 		port {
 			panel1_in: endpoint {
 				remote-endpoint = <&mipi_dsi_bridge_out>;
