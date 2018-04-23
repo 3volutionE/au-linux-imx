@@ -7,6 +7,12 @@
 
 #include "fsl-imx8mq.dtsi"
 
+#if 1
+#define MIPI_DSI_STATUS	"okay"
+#else
+#define MIPI_DSI_STATUS	"disabled"
+#endif
+
 / {
 	model = "Boundary Devices i.MX8MQ Nitrogen8M";
 	compatible = "boundary,imx8mq-nitrogen8m", "fsl,imx8mq";
@@ -743,11 +749,11 @@
 };
 
 &mipi_dsi_phy {
-	status = "okay";
+	status = MIPI_DSI_STATUS;
 };
 
 &mipi_dsi {
-	status = "okay";
+	status = MIPI_DSI_STATUS;
 	as_bridge;
 	sync-pol = <1>;
 	assigned-clocks = <&clk IMX8MQ_CLK_DSI_PHY_REF_SRC>,
@@ -770,7 +776,7 @@
 };
 
 &mipi_dsi_bridge {
-	status = "okay";
+	status = MIPI_DSI_STATUS;
 
 	fb_mipi_dsi: panel@0 {
 		compatible = "raydium,rm67191";
