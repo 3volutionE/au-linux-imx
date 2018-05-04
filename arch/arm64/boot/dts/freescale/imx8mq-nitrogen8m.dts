@@ -227,7 +227,8 @@
 
 		pinctrl_mipi_dsi_en: mipi-dsi-en {
 			fsl,pins = <
-				MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x16
+				/* TEMP: Make ODE for now, mipi db could have grounded this unused pin */
+				MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x26
 			>;
 		};
 
