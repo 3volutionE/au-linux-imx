@@ -19,14 +19,14 @@
 
 	aliases {
 		fb_mipi_dsi = &fb_mipi_dsi;
-		pwm_mipi_dsi = &pwm3;
+		pwm_mipi_dsi = &pwm1;
 	};
 
 	backlight_mipi_dsi: backlight_mipi_dsi {
-		compatible = "pwm-backlight";
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10>;
+		compatible = "pwm-backlight";
 		default-brightness-level = <8>;
-		pwms = <&pwm3 0 30000>;
+		pwms = <&pwm1 0 30000>;		/* 33.3 Khz */
 	};
 
 	bt-rfkill {
@@ -241,7 +241,7 @@
 
 		pinctrl_pwm1: pwm1grp {
 			fsl,pins = <
-				MX8MQ_IOMUXC_SPDIF_EXT_CLK_PWM1_OUT	0x16
+				MX8MQ_IOMUXC_GPIO1_IO01_PWM1_OUT	0x16
 			>;
 		};
 
