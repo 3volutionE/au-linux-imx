@@ -928,7 +928,7 @@
 	/* TODO check clock */
 	ext_osc = <1>;
 	hard-wired = <1>;
-	status = "okay";
+	status = "disabled";
 };
 
 &pwm1 {
