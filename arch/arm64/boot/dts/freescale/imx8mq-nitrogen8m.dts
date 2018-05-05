@@ -7,6 +7,10 @@
 
 #include "fsl-imx8mq.dtsi"
 
+#if 0
+#define RM68200
+#endif
+
 #if 1
 #define HDMI_STATUS	"okay"
 #else
@@ -793,10 +797,29 @@
 		reg = <0>;
 		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
 		reset-gpio = <&gpio3 15 GPIO_ACTIVE_HIGH>;
+#ifdef RM68200
+		dsi-lanes = <2>;
+#else
 		dsi-lanes = <4>;
+#endif
 		panel-width-mm = <108>;
 		panel-height-mm = <172>;
 
+#ifdef RM68200
+		display-timings {
+			t_dsi: t_dsi_default {
+				clock-frequency = <35000000>;
+				hactive = <720>;
+				vactive = <1280>;
+				hback-porch = <16>;
+				hfront-porch = <16>;
+				vback-porch = <8>;
+				vfront-porch = <8>;
+				hsync-len = <16>;
+				vsync-len = <8>;
+			};
+		};
+#else
 		display-timings {
 			t_lvds: t_lvds_default {
 				clock-frequency = <159400000>;
@@ -810,6 +833,7 @@
 				vsync-len = <1>;
 			};
 		};
+#endif
 
 		port {
 			panel1_in: endpoint {
