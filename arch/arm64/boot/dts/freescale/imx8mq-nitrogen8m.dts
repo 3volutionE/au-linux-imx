@@ -773,6 +773,7 @@
 	assigned-clock-rate = <120000000>,
 			      <0>,
 			      <599999999>;
+	max-res = <1920>, <1920>;
 
 	port@0 {
 		lcdif_mipi_dsi: mipi-dsi-endpoint {
