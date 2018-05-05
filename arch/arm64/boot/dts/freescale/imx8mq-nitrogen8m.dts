@@ -80,6 +80,13 @@
 		regulator-max-microvolt = <1000000>;
 	};
 
+	reg_vref_5v: regulator-vref-5v {
+		compatible = "regulator-fixed";
+		regulator-name = "vref-5v";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+	};
+
 	reg_wlan_vmmc: regulator-wlan-vmmc {
 		compatible = "regulator-fixed";
 		pinctrl-names = "default";
@@ -855,6 +862,7 @@
 #endif
 		panel-width-mm = <108>;
 		panel-height-mm = <172>;
+		power-supply = <&reg_vref_5v>;
 
 #ifdef RM68200
 		display-timings {
