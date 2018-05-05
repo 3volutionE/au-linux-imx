@@ -8,6 +8,12 @@
 #include "fsl-imx8mq.dtsi"
 
 #if 1
+#define HDMI_STATUS	"okay"
+#else
+#define HDMI_STATUS	"disabled"
+#endif
+
+#if 1
 #define MIPI_DSI_STATUS	"okay"
 #else
 #define MIPI_DSI_STATUS	"disabled"
@@ -102,6 +108,7 @@
 		model = "imx-audio-hdmi";
 		audio-cpu = <&sai4>;
 		protocol = <1>;
+		status = HDMI_STATUS;
 	};
 };
 
@@ -502,7 +509,7 @@
 };
 
 &dcss {
-	status = "okay";
+	status = HDMI_STATUS;
 	disp-dev = "hdmi_disp";
 };
 
@@ -540,11 +547,11 @@
 };
 
 &hdmi {
-	status = "okay";
+	status = HDMI_STATUS;
 };
 
 &hdmi_cec {
-	status = "okay";
+	status = HDMI_STATUS;
 };
 
 &i2c1 {
