@@ -105,7 +105,7 @@
 		model = "wm8960-audio";
 		cpu-dai = <&sai1>;
 		codec-master;
-		audio-codec = <&codec>;
+		audio-codec = <&wm8960>;
 		audio-routing =
 			"Headphone Jack", "HP_L",
 			"Headphone Jack", "HP_R",
@@ -743,17 +743,22 @@
 	pinctrl-0 = <&pinctrl_i2c4>;
 	status = "okay";
 
-	/* TODO */
-	touchscreen@04 {
-		compatible = "touch_driver";
+	gt9271@14 {
+		compatible = "goodix,gt9271";
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c4_touch>;
-		reg = <0x04>;
-		interrupts-extended = <&gpio3 12 IRQ_TYPE_LEVEL_LOW>;
-		reset-gpios = <&gpio3 13 GPIO_ACTIVE_LOW>;
+		reg = <0x14>;
+		esd-recovery-timeout-ms = <2000>;
+/* driver writes levels, instead of active/inactive */
+#define GPIRQ_GT911 	<&gpio3 12 IRQ_TYPE_LEVEL_HIGH>
+#define GP_GT911_IRQ 	<&gpio3 12 GPIO_ACTIVE_HIGH>
+#define GP_GT911_RESET	<&gpio3 13 GPIO_ACTIVE_HIGH>
+		interrupts-extended = GPIRQ_GT911;
+		irq-gpios = GP_GT911_IRQ;
+		reset-gpios = GP_GT911_RESET;
 	};
 
-	codec: wm8960@1a {
+	wm8960: wm8960@1a {
 		compatible = "wlf,wm8960";
 		reg = <0x1a>;
 		clocks = <&clk IMX8MQ_CLK_SAI1_ROOT>;
