@@ -920,12 +920,21 @@
 };
 
 &pcie0 {
+#if 0
+	clocks = <&clk IMX8MQ_CLK_PCIE1_ROOT>,
+		<&clk IMX8MQ_CLK_PCIE1_AUX_CG>,
+		<&clk IMX8MQ_CLK_PCIE1_PHY_CG>,
+		<&clk IMX8MQ_CLK_CLK2_CG>;
+	clock-names = "pcie", "pcie_bus", "pcie_phy", "pcie_ext_src";
+	ext_osc = <0>;
+#else
+	ext_osc = <1>;
+#endif
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_pcie0>;
 	/* TODO check clock */
 	disable-gpio = <&gpio5 6 GPIO_ACTIVE_LOW>;
 	reset-gpio = <&gpio5 7 GPIO_ACTIVE_LOW>;
-	ext_osc = <1>;
 	status = "okay";
 };
 
