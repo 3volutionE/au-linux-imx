@@ -248,9 +248,11 @@
 			>;
 		};
 
-		pinctrl_mipi_dsi_en: mipi-dsi-en {
+		pinctrl_i2c4_sn65dsi83: i2c4-sn65dsi83 {
 			fsl,pins = <
-				/* TEMP: Make ODE for now, mipi db could have grounded this unused pin */
+#define GPIRQ_I2C4_SN65DSI83	<&gpio1 1 IRQ_TYPE_LEVEL_LOW>
+				MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x16
+#define GP_I2C4_SN65DSI83_EN	<&gpio3 15 GPIO_ACTIVE_HIGH>
 				MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x26
 			>;
 		};
@@ -288,6 +290,20 @@
 				MX8MQ_IOMUXC_NAND_DATA01_QSPI_A_DATA1	0x82
 				MX8MQ_IOMUXC_NAND_DATA02_QSPI_A_DATA2	0x82
 				MX8MQ_IOMUXC_NAND_DATA03_QSPI_A_DATA3	0x82
+			>;
+		};
+
+		pinctrl_reg_dram_0p9v: reg-dram-0p9v {
+			fsl,pins = <
+#define GP_DRAM_0P9_VSEL	<&gpio3 14 GPIO_ACTIVE_HIGH>
+		                MX8MQ_IOMUXC_NAND_DQS_GPIO3_IO14	0x16
+			>;
+		};
+
+		pinctrl_reg_dram_1p1v: reg-dram-1p1v {
+			fsl,pins = <
+#define GP_DRAM_1P1_VSEL	<&gpio3 11 GPIO_ACTIVE_HIGH>
+				MX8MQ_IOMUXC_NAND_DATA05_GPIO3_IO11	0x16
 			>;
 		};
 
@@ -651,16 +667,28 @@
 };
 
 &i2c1a {
-	reg_vdd_dram_p9: fan53555@60 {
+	reg_dram_0p9v: fan53555@60 {
 		compatible = "fcs,fan53555";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_reg_dram_0p9v>;
 		reg = <0x60>;
+		regulator-min-microvolt =  <600000>;
+		regulator-max-microvolt = <1230000>;
+		regulator-always-on;
+		vsel-gpios = GP_DRAM_0P9_VSEL;
 	};
 };
 
 &i2c1b {
-	reg_nvcc_dram_1p1v: fan53555@60 {
+	reg_dram_1p1v: fan53555@60 {
 		compatible = "fcs,fan53555";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_reg_dram_1p1v>;
 		reg = <0x60>;
+		regulator-min-microvolt =  <600000>;
+		regulator-max-microvolt = <1230000>;
+		regulator-always-on;
+		vsel-gpios = GP_DRAM_1P1_VSEL;
 	};
 };
 
@@ -860,8 +888,6 @@
 	fb_mipi_dsi: panel@0 {
 		compatible = "panel,simple";
 		reg = <0>;
-		pinctrl-0 = <&pinctrl_mipi_dsi_en>;
-		reset-gpio = <&gpio3 15 GPIO_ACTIVE_HIGH>;
 		bits-per-color = <8>;
 		bus-format = "rgb888";
 		dsi-format = "rgb888";
