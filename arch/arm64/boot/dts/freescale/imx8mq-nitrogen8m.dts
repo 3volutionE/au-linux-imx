@@ -793,6 +793,21 @@
 		clock-names = "mclk";
 		wlf,shared-lrclk;
 	};
+
+	mipi_to_lvds@2c {
+		compatible = "ti,sn65dsi83";
+		display = <&fb_mipi_dsi>;
+		clocks = <&clk IMX8MQ_CLK_DSI_PHY_REF_DIV>;
+		clock-names = "mipi_clk";
+		enable-gpios = GP_I2C4_SN65DSI83_EN;
+		interrupts-extended = GPIRQ_I2C4_SN65DSI83;
+		dsi-lanes = <4>;
+		lvds-24bpp;
+		jeida;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c4_sn65dsi83>;
+		reg = <0x2c>;
+	};
 };
 
 &lcdif {
