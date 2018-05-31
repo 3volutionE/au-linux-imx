@@ -239,7 +239,7 @@
 
 	display-timings {
 		t_dsi: t_dsi_default {
-			clock-frequency = <80000000>;
+			clock-frequency = <160000000>;
 			hactive = <1200>;
 			vactive = <1920>;
 			hback-porch = <60>;
