@@ -78,6 +78,8 @@ struct sn65dsi83_priv
 	struct device_node	*disp_node;
 	struct gpio_desc	*gp_en;
 	struct clk		*mipi_clk;
+	struct notifier_block	nb;
+	u8			chip_enabled;
 	u8			show_reg;
 	u8			dsi_lanes;
 	u8			de_active_low;
@@ -89,8 +91,6 @@ struct sn65dsi83_priv
 	u8			dsi_clk_divider;
 	u8			mipi_clk_index;
 };
-
-struct sn65dsi83_priv *g_sn;
 
 /**
  * sn_i2c_read_reg - read data from a register of the i2c slave device.
@@ -130,8 +130,10 @@ static int sn_i2c_write_byte(struct sn65dsi83_priv *sn, u8 reg, u8 val)
 
 static void sn_disable(struct sn65dsi83_priv *sn)
 {
-	if (sn)
+	if (sn) {
+		sn->chip_enabled = 0;
 		gpiod_set_value(sn->gp_en, 0);
+	}
 }
 
 static void sn_enable_gp(struct gpio_desc *gp_en)
@@ -144,7 +146,7 @@ static void sn_enable_gp(struct gpio_desc *gp_en)
 static void sn_enable_irq(struct sn65dsi83_priv *sn)
 {
 	sn_i2c_write_byte(sn, SN_IRQ_STAT, 0xff);
-	sn_i2c_write_byte(sn, SN_IRQ_MASK, 0xff);
+	sn_i2c_write_byte(sn, SN_IRQ_MASK, 0xfe);
 	sn_i2c_write_byte(sn, SN_IRQ_EN, 1);
 }
 
@@ -260,7 +262,8 @@ static void sn_enable_pll(struct sn65dsi83_priv *sn, struct fb_info *info)
 
 static void sn_disable_pll(struct sn65dsi83_priv *sn)
 {
-	sn_i2c_write_byte(sn, SN_PLL_EN, 0);
+	if (sn->chip_enabled)
+		sn_i2c_write_byte(sn, SN_PLL_EN, 0);
 }
 
 static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *data)
@@ -268,17 +271,15 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 	struct fb_event *evdata = data;
 	struct fb_info *info = evdata->info;
 	struct device_node *node = info->device->of_node;
-	struct sn65dsi83_priv *sn = g_sn;
+	struct sn65dsi83_priv *sn = container_of(nb, struct sn65dsi83_priv, nb);
 	struct device *dev;
 	int blank_type;
 
-	if (!sn)
-		return 0;
 	dev = &sn->client->dev;
-	dev_info(dev, "%s: event %lx, display %s\n", __func__, event, evdata->info->fix.id);
+	if (0) dev_info(dev, "%s: event %lx, %p(%s) %p(%s)\n", __func__,
+		event, node, node->name, sn->disp_node, sn->disp_node->name);
 	if (node != sn->disp_node)
 		return 0;
-	dev_info(dev, "%s: event %lx, display %s\n", __func__, event, evdata->info->fix.id);
 
 	switch (event) {
 	case FB_R_EARLY_EVENT_BLANK:
@@ -293,6 +294,7 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 		blank_type = *((int *)evdata->data);
 		if (blank_type == FB_BLANK_UNBLANK) {
 			sn_enable_gp(sn->gp_en);
+			sn->chip_enabled = 1;
 			sn_setup_regs(sn, info);
 		} else {
 			sn_disable_pll(sn);
@@ -323,9 +325,6 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 	return 0;
 }
 
-static struct notifier_block nb = {
-	.notifier_call = sn_fb_event,
-};
 
 
 /*
@@ -349,7 +348,11 @@ static ssize_t sn65dsi83_reg_show(struct device *dev,
 	struct device_attribute *attr, char *buf)
 {
 	struct sn65dsi83_priv *sn = dev_get_drvdata(dev);
-	int val = sn_i2c_read_byte(sn, sn->show_reg);
+	int val;
+
+	if (!sn->chip_enabled)
+		return -EBUSY;
+	val = sn_i2c_read_byte(sn, sn->show_reg);
 
 	return sprintf(buf, "%02x: %02x\n", sn->show_reg, val);
 }
@@ -404,6 +407,8 @@ static int sn65dsi83_probe(struct i2c_client *client,
 	const char *df;
 	u32 sync_delay;
 	u32 dsi_lanes;
+	struct device_node *disp_dsi;
+
 
 	adapter = to_i2c_adapter(client->dev.parent);
 
@@ -431,6 +436,7 @@ static int sn65dsi83_probe(struct i2c_client *client,
 	if (ret < 0) {
 		/* enable might be used for something else, change to input */
 		gpiod_direction_input(gp_en);
+		dev_info(&client->dev, "i2c read failed\n");
 		return -ENODEV;
 	}
 	gpiod_set_value(gp_en, 0);
@@ -441,6 +447,9 @@ static int sn65dsi83_probe(struct i2c_client *client,
 	sn->client = client;
 	sn->gp_en = gp_en;
 
+	disp_dsi = of_parse_phandle(np, "display-dsi", 0);
+	if (!disp_dsi)
+		return -ENODEV;
 	sn->disp_node = of_parse_phandle(np, "display", 0);
 	if (!sn->disp_node)
 		return -ENODEV;
@@ -458,7 +467,7 @@ static int sn65dsi83_probe(struct i2c_client *client,
 			return -EINVAL;
 		sn->sync_delay = sync_delay;
 	}
-	ret = of_property_read_string(sn->disp_node, "dsi-format", &df);
+	ret = of_property_read_string(disp_dsi, "dsi-format", &df);
 	if (ret) {
 		dev_err(&client->dev, "dsi-format missing in display node%d\n", ret);
 		return ret;
@@ -476,11 +485,17 @@ static int sn65dsi83_probe(struct i2c_client *client,
 		pr_info("%s: request_irq failed, irq:%i\n", client_name, client->irq);
 
 	i2c_set_clientdata(client, sn);
-	fb_register_client(&nb);
+	sn->nb.notifier_call = sn_fb_event;
+	ret = fb_register_client(&sn->nb);
+	if (ret < 0) {
+		dev_err(&client->dev, "fb_register_client failed(%d)\n", ret);
+		return ret;
+	}
 	ret = device_create_file(&client->dev, &dev_attr_sn65dsi83_reg);
 	if (ret < 0)
 		pr_warn("failed to add sn65dsi83 sysfs files\n");
 
+	dev_info(&client->dev, "succeeded\n");
 	return 0;
 }
 
@@ -489,7 +504,7 @@ static int sn65dsi83_remove(struct i2c_client *client)
 	struct sn65dsi83_priv *sn = i2c_get_clientdata(client);
 
 	device_remove_file(&client->dev, &dev_attr_sn65dsi83_reg);
-	fb_unregister_client(&nb);
+	fb_unregister_client(&sn->nb);
 	sn_disable(sn);
 	return 0;
 }
