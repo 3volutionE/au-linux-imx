@@ -12,6 +12,8 @@
 #endif
 
 #if 0
+#define M101NWWB
+#elif 0
 #define RM68200
 #endif
 
@@ -224,6 +226,13 @@
 			MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x16
 #define GP_I2C4_SN65DSI83_EN	<&gpio3 15 GPIO_ACTIVE_HIGH>
 			MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x26
+		>;
+	};
+
+	pinctrl_mipi_panel_ltk08: mipi-panel-ltk08grp {
+		fsl,pins = <
+#define GP_LTK08_MIPI_EN	<&gpio1 1 GPIO_ACTIVE_HIGH>
+			MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x16
 		>;
 	};
 
@@ -465,6 +474,7 @@
 
 	aliases {
 		fb_mipi_dsi = &fb_mipi_dsi;
+		fb_dcss = &fb_dcss;
 		pwm_mipi_dsi = &pwm1;
 	};
 
@@ -472,7 +482,7 @@
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10>;
 		compatible = "pwm-backlight";
 		default-brightness-level = <8>;
-		display = <&fb_mipi_dsi>;
+		display = <&fb_dcss>;
 		pwms = <&pwm3 0 30000>;		/* 33.3 Khz */
 	};
 
@@ -881,15 +891,16 @@
 	};
 
 	mipi_to_lvds@2c {
-		compatible = "ti,sn65dsi83";
-		display = <&fb_mipi_dsi>;
 		clocks = <&clk IMX8MQ_CLK_DSI_PHY_REF_DIV>;
 		clock-names = "mipi_clk";
+		compatible = "ti,sn65dsi83";
+		display = <&fb_dcss>;
+		display-dsi = <&fb_mipi_dsi>;
+		dsi-lanes = <4>;
 		enable-gpios = GP_I2C4_SN65DSI83_EN;
 		interrupts-extended = GPIRQ_I2C4_SN65DSI83;
-		dsi-lanes = <4>;
-		lvds-24bpp;
 		jeida;
+		lvds-24bpp;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c4_sn65dsi83>;
 		reg = <0x2c>;
@@ -993,8 +1004,11 @@
 		bus-format = "rgb888";
 		dsi-format = "rgb888";
 		power-supply = <&reg_vref_5v>;
+
 #ifdef RM68200
 #include "panel-osd050t3236.dtsi"
+#elif defined(M101NWWB)
+#include "panel-m101nwwb.dtsi"
 #else
 #include "panel-ltk080a60a004t.dtsi"
 #endif
@@ -1108,6 +1122,7 @@
 };
 
 &uart1 { /* console */
+	dma-names = "","";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart1>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART1_SRC>;
@@ -1116,6 +1131,7 @@
 };
 
 &uart2 {
+	dma-names = "","";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart2>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART2_SRC>;
@@ -1124,6 +1140,7 @@
 };
 
 &uart3 {
+	dma-names = "","";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart3>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART3_SRC>;
@@ -1133,6 +1150,7 @@
 };
 
 &uart4 {
+	dma-names = "","";
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart4>;
 	assigned-clocks = <&clk IMX8MQ_CLK_UART4_SRC>;
@@ -1178,7 +1196,7 @@
 
 &usdhc1 {
 	bus-width = <8>;
-#if 0
+#if 1
 	pinctrl-names = "default";
 #else
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
@@ -1199,7 +1217,7 @@
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>;
 	non-removable;
-	status = "disabled";
+	status = "okay";
 	vmmc-supply = <&reg_wlan_vmmc>;
 };
 
