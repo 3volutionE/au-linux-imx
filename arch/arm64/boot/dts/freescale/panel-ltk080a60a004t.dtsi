@@ -1,5 +1,6 @@
 #include <dt-bindings/display/simple_panel_mipi_cmds.h>
 	dsi-lanes = <4>;
+	enable-gpios = GP_LTK08_MIPI_EN;
 	mode-skip-eot;
 	mode-video;
 	mode-video-burst;
@@ -236,14 +237,16 @@
 	>;
 	panel-width-mm = <108>;
 	panel-height-mm = <172>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_mipi_panel_ltk08>;
 
 	display-timings {
 		t_dsi: t_dsi_default {
-			clock-frequency = <160000000>;
+			clock-frequency = <134000000>;
 			hactive = <1200>;
 			vactive = <1920>;
 			hback-porch = <60>;
-			hfront-porch = <80>;
+			hfront-porch = <42>;
 			vback-porch = <25>;
 			vfront-porch = <35>;
 			hsync-len = <1>;
