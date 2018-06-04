@@ -21,7 +21,7 @@
 #define HDMI_STATUS	"disabled"
 #endif
 
-#if 1
+#if 0
 #define MIPI_DSI_STATUS	"okay"
 #else
 #define MIPI_DSI_STATUS	"disabled"
@@ -254,6 +254,13 @@
 				MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x16
 #define GP_I2C4_SN65DSI83_EN	<&gpio3 15 GPIO_ACTIVE_HIGH>
 				MX8MQ_IOMUXC_NAND_RE_B_GPIO3_IO15	0x26
+			>;
+		};
+
+		pinctrl_mipi_panel_ltk08: mipi-panel-ltk08grp {
+			fsl,pins = <
+#define GP_LTK08_MIPI_EN	<&gpio1 1 GPIO_ACTIVE_HIGH>
+				MX8MQ_IOMUXC_GPIO1_IO01_GPIO1_IO1	0x16
 			>;
 		};
 
