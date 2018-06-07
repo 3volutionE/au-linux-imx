@@ -3,6 +3,7 @@
 	mode-skip-eot;
 	mode-video;
 	mode-video-burst;
+/*	mode-video-hse; */
 #if 0
 	mipi-cmds-init = /bits/ 8 <
 		GEN_S1P(0x83,0x00)	/* Page 0 */
@@ -38,17 +39,45 @@
 #endif
 	panel-width-mm = <217>;
 	panel-height-mm = <136>;
+	spwg;
 
 	display-timings {
 		t_dsi: t_dsi_default {
-			clock-frequency = <71000000>;
+/*
+ * MHz
+ * 32 good(PLL unlock), 33 squished (PLL unlock)
+ * 34 good(PLL unlock), 35 squished (PLL unlock)
+ * 36 good(PLL unlock), 37 squished (PLL unlock)
+ * 38 good, 39 squished
+ * 40-41 good, 42 squished
+ * 43-44 good, 45 squished
+ * 46-48 good, 49 squished
+ * 50-52 good, 53 single line, 54 squished
+ * 55-57 good, 58 single line, 59 squished,
+ * 60-63 good, 64-65 single line, 66 squished,
+ * 67-70 good, 71-73 blank, 74-75 squished,
+ * 76-80 good
+ */
+			clock-frequency = <70000000>;
+/*
+ * m101nwwb
+ * ./panel_timings 70000000 60 1340 1470 815 833
+ * h=1409(1340:1470) v=828(815:833) pixclk=69999120(70000000)
+ * hblank=129 vblank=28
+ *
+ * Tianma - tm070jdhg30
+ * ./panel_timings 70000000 60 1300 1444 803 901
+ * h=1355(1300:1444) v=861(803:901) pixclk=69999300(70000000)
+ *
+ * The m101nwwb results satisfy both, so use them
+ */
 			hactive = <1280>;
-			vactive = <800>;
-			hback-porch = <78>;
-			hfront-porch = <78>;
-			vback-porch = <10>;
-			vfront-porch = <10>;
-			hsync-len = <4>;
-			vsync-len = <3>;
+			vactive = <800>;	/* Tianma */
+			hback-porch = <5>;	/* 5 */
+			hfront-porch = <123>;	/* 15 : 159 */
+			vback-porch = <3>;	/* 2 : 101-tvfp */
+			vfront-porch = <24>;	/* 3 : 99 */
+			hsync-len = <1>;	/* 1 : 256 */
+			vsync-len = <1>;	/* 1 : 128 */
 		};
 	};
