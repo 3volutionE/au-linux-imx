@@ -35,6 +35,9 @@
 #include <linux/gpio.h>
 #include <linux/fb.h>
 #include <linux/kthread.h>
+#include <video/display_timing.h>
+#include <video/of_videomode.h>
+#include <video/videomode.h>
 
 /* register definitions according to the sn65dsi83 data sheet */
 #define SN_SOFT_RESET		0x09
@@ -63,7 +66,7 @@
 #define SN_HBP			0x34
 #define SN_VBP			0x36
 #define SN_HFP			0x38
-#define SN_VFB			0x3a
+#define SN_VFP			0x3a
 #define SN_TEST_PATTERN		0x3c
 #define SN_IRQ_EN		0xe0
 #define SN_IRQ_MASK		0xe1
@@ -71,18 +74,33 @@
 
 static const char *client_name = "sn65dsi83";
 
+static const unsigned char registers_to_show[] = {
+	SN_SOFT_RESET, 	SN_CLK_SRC, SN_CLK_DIV, SN_PLL_EN,
+	SN_DSI_LANES, SN_DSI_EQ, SN_DSI_CLK, SN_FORMAT,
+	SN_LVDS_VOLTAGE, SN_LVDS_TERM, SN_LVDS_CM_VOLTAGE,
+	0, SN_HACTIVE_LOW,
+	0, SN_VACTIVE_LOW,
+	0, SN_SYNC_DELAY_LOW,
+	0, SN_HSYNC_LOW,
+	0, SN_VSYNC_LOW,
+	SN_HBP, SN_VBP,
+	SN_HFP, SN_VFP,
+	SN_TEST_PATTERN,
+	SN_IRQ_EN, SN_IRQ_MASK, SN_IRQ_STAT,
+};
 
 struct sn65dsi83_priv
 {
 	struct i2c_client	*client;
 	struct device_node	*disp_node;
+	struct device_node	*disp_dsi;
 	struct gpio_desc	*gp_en;
 	struct clk		*mipi_clk;
 	struct notifier_block	nb;
+	u32			pixelclock;
 	u8			chip_enabled;
 	u8			show_reg;
 	u8			dsi_lanes;
-	u8			de_active_low;
 	u8			spwg;	/* lvds lane 3 has MSBs of color */
 	u8			jeida;	/* lvds lane 3 has LSBs of color */
 	u8			dsi_bpp;
@@ -130,10 +148,11 @@ static int sn_i2c_write_byte(struct sn65dsi83_priv *sn, u8 reg, u8 val)
 
 static void sn_disable(struct sn65dsi83_priv *sn)
 {
-	if (sn) {
+	if (sn->chip_enabled) {
+		disable_irq(sn->client->irq);
 		sn->chip_enabled = 0;
-		gpiod_set_value(sn->gp_en, 0);
 	}
+	gpiod_set_value(sn->gp_en, 0);
 }
 
 static void sn_enable_gp(struct gpio_desc *gp_en)
@@ -146,73 +165,85 @@ static void sn_enable_gp(struct gpio_desc *gp_en)
 static void sn_enable_irq(struct sn65dsi83_priv *sn)
 {
 	sn_i2c_write_byte(sn, SN_IRQ_STAT, 0xff);
-	sn_i2c_write_byte(sn, SN_IRQ_MASK, 0xfe);
+	sn_i2c_write_byte(sn, SN_IRQ_MASK, 0x7f);
 	sn_i2c_write_byte(sn, SN_IRQ_EN, 1);
 }
 
-static int sn_get_dsi_clk_divider(struct sn65dsi83_priv *sn, struct fb_info *info)
+static int sn_get_dsi_clk_divider(struct sn65dsi83_priv *sn)
 {
-	u32 dsi_clk_divider;
+	u32 dsi_clk_divider = 25;
 	u32 mipi_clk_rate;
 	u8 mipi_clk_index;
 	int ret;
+	u32 pixelclock = sn->pixelclock;
 
 	mipi_clk_rate = clk_get_rate(sn->mipi_clk);
 	if (!mipi_clk_rate) {
 		pr_err("mipi clock is off\n");
-		mipi_clk_rate = 500000000;
+		mipi_clk_rate = pixelclock * 3;
 	}
 	if (mipi_clk_rate > 500000000) {
 		pr_err("mipi clock(%d) is too high\n", mipi_clk_rate);
 		mipi_clk_rate = 500000000;
 	}
-	dsi_clk_divider = mipi_clk_rate / info->mode->pixclock;
+	if (pixelclock)
+		dsi_clk_divider = mipi_clk_rate / pixelclock;
 
 	if (dsi_clk_divider > 25)
 		dsi_clk_divider = 25;
 	else if (!dsi_clk_divider)
 		dsi_clk_divider = 1;
 	mipi_clk_index = mipi_clk_rate / 5000000;
+	if (mipi_clk_index < 8)
+		mipi_clk_index = 8;
 	ret = (sn->dsi_clk_divider == dsi_clk_divider) &&
 		(sn->mipi_clk_index == mipi_clk_index);
 	if (!ret)
-		pr_info("dsi_clk_divider = %d, mipi_clk_index=%d\n",
-				dsi_clk_divider, mipi_clk_index);
+		pr_info("dsi_clk_divider = %d, mipi_clk_index=%d, mipi_clk_rate=%d\n",
+			dsi_clk_divider, mipi_clk_index, mipi_clk_rate);
 	sn->dsi_clk_divider = dsi_clk_divider;
 	sn->mipi_clk_index = mipi_clk_index;
 	return ret;
 }
 
-static void sn_setup_regs(struct sn65dsi83_priv *sn, struct fb_info *info)
+static int sn_setup_regs(struct sn65dsi83_priv *sn)
 {
-	struct fb_videomode *vm = info->mode;
-	u32 pixclock = vm->pixclock;
-	unsigned i = 0;
+	unsigned i = 5;
 	int format = 0x10;
+	u32 pixelclock;
+	struct videomode vm;
+	int ret;
 
-	if (pixclock > 37500000) {
-		i = (pixclock - 12500000) / 25000000;
-		if (i > 5)
-			i = 5;
+	ret = of_get_videomode(sn->disp_dsi, &vm, 0);
+	if (ret < 0)
+		return ret;
+
+	pixelclock = vm.pixelclock;
+	if (pixelclock) {
+		if (pixelclock > 37500000) {
+			i = (pixelclock - 12500000) / 25000000;
+			if (i > 5)
+				i = 5;
+		}
 	}
-
-	pr_info("pixclock=%d %dx%x, margins=%d,%d %d,%d  syncs=%d %d\n",
-		pixclock, vm->xres, vm->yres,
-		vm->left_margin, vm->right_margin,
-		vm->upper_margin, vm->lower_margin,
-		vm->hsync_len, vm->vsync_len);
+	sn->pixelclock = pixelclock;
+	pr_info("pixelclock=%d %dx%d, margins=%d,%d %d,%d  syncs=%d %d\n",
+		pixelclock, vm.hactive, vm.vactive,
+		vm.hback_porch, vm.hfront_porch,
+		vm.vback_porch, vm.vfront_porch,
+		vm.hsync_len, vm.vsync_len);
 	sn_i2c_write_byte(sn, SN_CLK_SRC, (i << 1) | 1);
-	sn_get_dsi_clk_divider(sn, info);
+	sn_get_dsi_clk_divider(sn);
 	sn_i2c_write_byte(sn, SN_CLK_DIV, (sn->dsi_clk_divider - 1) << 3);
 
-	sn_i2c_write_byte(sn, SN_DSI_LANES, 4 - sn->dsi_lanes);
+	sn_i2c_write_byte(sn, SN_DSI_LANES, ((4 - sn->dsi_lanes) << 3) | 0x20);
 	sn_i2c_write_byte(sn, SN_DSI_EQ, 0);
 	sn_i2c_write_byte(sn, SN_DSI_CLK, sn->mipi_clk_index);
-	if (sn->de_active_low)
+	if (vm.flags & DISPLAY_FLAGS_DE_LOW)
 		format |= BIT(7);
-	if (!(vm->sync & FB_SYNC_HOR_HIGH_ACT))
+	if (!(vm.flags & DISPLAY_FLAGS_HSYNC_HIGH))
 		format |= BIT(6);
-	if (!(vm->sync & FB_SYNC_VERT_HIGH_ACT))
+	if (!(vm.flags & DISPLAY_FLAGS_VSYNC_HIGH))
 		format |= BIT(5);
 	if (sn->dsi_bpp == 24) {
 		if (sn->spwg) {
@@ -229,41 +260,61 @@ static void sn_setup_regs(struct sn65dsi83_priv *sn, struct fb_info *info)
 	sn_i2c_write_byte(sn, SN_FORMAT, format);
 
 	sn_i2c_write_byte(sn, SN_LVDS_VOLTAGE, 4);
-	sn_i2c_write_byte(sn, SN_LVDS_TERM, 1);
+	sn_i2c_write_byte(sn, SN_LVDS_TERM, 2);
 	sn_i2c_write_byte(sn, SN_LVDS_CM_VOLTAGE, 0);
-	sn_i2c_write_byte(sn, SN_HACTIVE_LOW, (u8)vm->xres);
-	sn_i2c_write_byte(sn, SN_HACTIVE_HIGH, (u8)(vm->xres >> 8));
-	sn_i2c_write_byte(sn, SN_VACTIVE_LOW, (u8)vm->yres);
-	sn_i2c_write_byte(sn, SN_VACTIVE_HIGH, (u8)(vm->yres >> 8));
+	sn_i2c_write_byte(sn, SN_HACTIVE_LOW, (u8)vm.hactive);
+	sn_i2c_write_byte(sn, SN_HACTIVE_HIGH, (u8)(vm.hactive >> 8));
+	sn_i2c_write_byte(sn, SN_VACTIVE_LOW, (u8)vm.vactive);
+	sn_i2c_write_byte(sn, SN_VACTIVE_HIGH, (u8)(vm.vactive >> 8));
 	sn_i2c_write_byte(sn, SN_SYNC_DELAY_LOW, (u8)sn->sync_delay);
 	sn_i2c_write_byte(sn, SN_SYNC_DELAY_HIGH, (u8)(sn->sync_delay >> 8));
-	sn_i2c_write_byte(sn, SN_HSYNC_LOW, (u8)vm->hsync_len);
-	sn_i2c_write_byte(sn, SN_HSYNC_HIGH, (u8)(vm->hsync_len >> 8));
-	sn_i2c_write_byte(sn, SN_VSYNC_LOW, (u8)vm->vsync_len);
-	sn_i2c_write_byte(sn, SN_VSYNC_HIGH, (u8)(vm->vsync_len >> 8));
-	sn_i2c_write_byte(sn, SN_HBP, (u8)vm->left_margin);
-	sn_i2c_write_byte(sn, SN_VBP, (u8)vm->upper_margin);
-	sn_i2c_write_byte(sn, SN_HFP, (u8)vm->right_margin);
-	sn_i2c_write_byte(sn, SN_VFB, (u8)vm->lower_margin);
+	sn_i2c_write_byte(sn, SN_HSYNC_LOW, (u8)vm.hsync_len);
+	sn_i2c_write_byte(sn, SN_HSYNC_HIGH, (u8)(vm.hsync_len >> 8));
+	sn_i2c_write_byte(sn, SN_VSYNC_LOW, (u8)vm.vsync_len);
+	sn_i2c_write_byte(sn, SN_VSYNC_HIGH, (u8)(vm.vsync_len >> 8));
+	sn_i2c_write_byte(sn, SN_HBP, (u8)vm.hback_porch);
+	sn_i2c_write_byte(sn, SN_VBP, (u8)vm.vback_porch);
+	sn_i2c_write_byte(sn, SN_HFP, (u8)vm.hfront_porch);
+	sn_i2c_write_byte(sn, SN_VFP, (u8)vm.vfront_porch);
 	sn_i2c_write_byte(sn, SN_TEST_PATTERN, 0);
-	sn_enable_irq(sn);
+	return 0;
 }
 
-static void sn_enable_pll(struct sn65dsi83_priv *sn, struct fb_info *info)
+static void sn_enable_pll(struct sn65dsi83_priv *sn)
 {
-	if (!sn_get_dsi_clk_divider(sn, info)) {
+	if (!sn_get_dsi_clk_divider(sn)) {
 		sn_i2c_write_byte(sn, SN_CLK_DIV, (sn->dsi_clk_divider - 1) << 3);
 		sn_i2c_write_byte(sn, SN_DSI_CLK, sn->mipi_clk_index);
 	}
 	sn_i2c_write_byte(sn, SN_PLL_EN, 1);
 	msleep(5);
 	sn_i2c_write_byte(sn, SN_SOFT_RESET, 1);
+	sn_enable_irq(sn);
 }
 
 static void sn_disable_pll(struct sn65dsi83_priv *sn)
 {
 	if (sn->chip_enabled)
 		sn_i2c_write_byte(sn, SN_PLL_EN, 0);
+}
+
+static void sn_init(struct sn65dsi83_priv *sn)
+{
+	sn_i2c_write_byte(sn, SN_SOFT_RESET, 1);
+	sn_i2c_write_byte(sn, SN_PLL_EN, 0);
+	sn_i2c_write_byte(sn, SN_IRQ_MASK, 0x0);
+	sn_i2c_write_byte(sn, SN_IRQ_EN, 1);
+}
+
+static void sn_prepare(struct sn65dsi83_priv *sn)
+{
+	sn_enable_gp(sn->gp_en);
+	sn_init(sn);
+	if (!sn->chip_enabled) {
+		sn->chip_enabled = 1;
+		enable_irq(sn->client->irq);
+	}
+	sn_setup_regs(sn);
 }
 
 static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *data)
@@ -276,8 +327,7 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 	int blank_type;
 
 	dev = &sn->client->dev;
-	if (0) dev_info(dev, "%s: event %lx, %p(%s) %p(%s)\n", __func__,
-		event, node, node->name, sn->disp_node, sn->disp_node->name);
+	if (0) dev_info(dev, "%s: event %lx)\n", __func__, event);
 	if (node != sn->disp_node)
 		return 0;
 
@@ -287,15 +337,13 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 		if (blank_type == FB_BLANK_UNBLANK) {
 			sn_disable(sn);
 		} else {
-			sn_enable_pll(sn, info);
+			sn_enable_pll(sn);
 		}
 		break;
 	case FB_EARLY_EVENT_BLANK:
 		blank_type = *((int *)evdata->data);
 		if (blank_type == FB_BLANK_UNBLANK) {
-			sn_enable_gp(sn->gp_en);
-			sn->chip_enabled = 1;
-			sn_setup_regs(sn, info);
+			sn_prepare(sn);
 		} else {
 			sn_disable_pll(sn);
 		}
@@ -303,7 +351,7 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 	case FB_EVENT_BLANK: {
 		blank_type = *((int *)evdata->data);
 		if (blank_type == FB_BLANK_UNBLANK) {
-			sn_enable_pll(sn, info);
+			sn_enable_pll(sn);
 		} else {
 			sn_disable(sn);
 		}
@@ -317,6 +365,11 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 	}
 	case FB_EVENT_RESUME : {
 		dev_info(dev, "%s: resume\n", __func__ );
+		break;
+	}
+	case FB_EVENT_FB_REGISTERED : {
+		sn_prepare(sn);
+		sn_enable_pll(sn);
 		break;
 	}
 	default:
@@ -335,10 +388,17 @@ static irqreturn_t sn_irq_handler(int irq, void *id)
 	struct sn65dsi83_priv *sn = id;
 	int status = sn_i2c_read_byte(sn, SN_IRQ_STAT);
 
-	if (status) {
-		dev_info(&sn->client->dev, "%s: status %x\n", __func__, status);
+	if (status > 0) {
 		sn_i2c_write_byte(sn, SN_IRQ_STAT, status);
+		dev_info(&sn->client->dev, "%s: status %x %x %x\n", __func__,
+			status, sn_i2c_read_byte(sn, SN_CLK_SRC),
+			sn_i2c_read_byte(sn, SN_IRQ_MASK));
+//		if (status & 1)
+//			sn_i2c_write_byte(sn, SN_SOFT_RESET, 1);
+		msleep(100);
 		return IRQ_HANDLED;
+	} else {
+		dev_err(&sn->client->dev, "%s: read error %d\n", __func__, status);
 	}
 	return IRQ_NONE;
 }
@@ -349,12 +409,37 @@ static ssize_t sn65dsi83_reg_show(struct device *dev,
 {
 	struct sn65dsi83_priv *sn = dev_get_drvdata(dev);
 	int val;
+	const unsigned char *p = registers_to_show;
+	int i = 0;
+	int total = 0;
+	int reg;
+	int cnt;
 
 	if (!sn->chip_enabled)
 		return -EBUSY;
-	val = sn_i2c_read_byte(sn, sn->show_reg);
+	if (sn->show_reg != 0) {
+		val = sn_i2c_read_byte(sn, sn->show_reg);
+		return sprintf(buf, "%02x: %02x\n", sn->show_reg, val);
+	}
 
-	return sprintf(buf, "%02x: %02x\n", sn->show_reg, val);
+	while (i < ARRAY_SIZE(registers_to_show)) {
+		reg = *p++;
+		i++;
+		if (!reg) {
+			reg = *p++;
+			i++;
+			val = sn_i2c_read_byte(sn, reg);
+			val |= sn_i2c_read_byte(sn, reg + 1) << 8;
+			cnt = sprintf(&buf[total], "%02x: %04x (%d)\n", reg, val, val);
+		} else {
+			val = sn_i2c_read_byte(sn, reg);
+			cnt = sprintf(&buf[total], "%02x: %02x (%d)\n", reg, val, val);
+		}
+		if (cnt <= 0)
+			break;
+		total += cnt;
+	}
+	return total;
 }
 
 static ssize_t sn65dsi83_reg_store(struct device *dev, struct device_attribute *attr,
@@ -366,6 +451,8 @@ static ssize_t sn65dsi83_reg_store(struct device *dev, struct device_attribute *
 	char *endp;
 	unsigned reg = simple_strtol(buf, &endp, 16);
 
+	if (!sn->chip_enabled)
+		return -EBUSY;
 	if (reg > 0xe5)
 		return count;
 
@@ -374,14 +461,10 @@ static ssize_t sn65dsi83_reg_store(struct device *dev, struct device_attribute *
 		return count;
 	if (*endp == 0x20)
 		endp++;
-	if (!*endp)
+	if (!*endp || *endp == 0x0a)
 		return count;
 	val = simple_strtol(endp, &endp, 16);
 	if (val >= 0x100)
-		return count;
-	if (!endp)
-		return count;
-	if (*endp)
 		return count;
 
 	dev_err(dev, "%s:reg=0x%x, val=0x%x\n", __func__, reg, val);
@@ -407,8 +490,6 @@ static int sn65dsi83_probe(struct i2c_client *client,
 	const char *df;
 	u32 sync_delay;
 	u32 dsi_lanes;
-	struct device_node *disp_dsi;
-
 
 	adapter = to_i2c_adapter(client->dev.parent);
 
@@ -439,35 +520,35 @@ static int sn65dsi83_probe(struct i2c_client *client,
 		dev_info(&client->dev, "i2c read failed\n");
 		return -ENODEV;
 	}
-	gpiod_set_value(gp_en, 0);
+//	gpiod_set_value(gp_en, 0);
 
 	sn = devm_kzalloc(&client->dev, sizeof(*sn), GFP_KERNEL);
 	if (!sn)
 		return -ENOMEM;
 	sn->client = client;
 	sn->gp_en = gp_en;
+	sn_init(sn);
 
-	disp_dsi = of_parse_phandle(np, "display-dsi", 0);
-	if (!disp_dsi)
+	sn->disp_dsi = of_parse_phandle(np, "display-dsi", 0);
+	if (!sn->disp_dsi)
 		return -ENODEV;
 	sn->disp_node = of_parse_phandle(np, "display", 0);
 	if (!sn->disp_node)
 		return -ENODEV;
-	if (of_property_read_u32(np, "dsi-lanes", &dsi_lanes) < 0)
-		return -EINVAL;
-	if (dsi_lanes < 1 || dsi_lanes > 4)
-		return -EINVAL;
-	sn->dsi_lanes = dsi_lanes;
-	sn->de_active_low = of_property_read_bool(np, "de-active-low");
-	sn->spwg = of_property_read_bool(np, "spwg");
-	sn->jeida = of_property_read_bool(np, "jeida");
 	sn->sync_delay = 0x120;
 	if (!of_property_read_u32(np, "sync-delay", &sync_delay)) {
 		if (sync_delay > 0xfff)
 			return -EINVAL;
 		sn->sync_delay = sync_delay;
 	}
-	ret = of_property_read_string(disp_dsi, "dsi-format", &df);
+	if (of_property_read_u32(sn->disp_dsi, "dsi-lanes", &dsi_lanes) < 0)
+		return -EINVAL;
+	if (dsi_lanes < 1 || dsi_lanes > 4)
+		return -EINVAL;
+	sn->dsi_lanes = dsi_lanes;
+	sn->spwg = of_property_read_bool(sn->disp_dsi, "spwg");
+	sn->jeida = of_property_read_bool(sn->disp_dsi, "jeida");
+	ret = of_property_read_string(sn->disp_dsi, "dsi-format", &df);
 	if (ret) {
 		dev_err(&client->dev, "dsi-format missing in display node%d\n", ret);
 		return ret;
@@ -483,6 +564,7 @@ static int sn65dsi83_probe(struct i2c_client *client,
 			IRQF_ONESHOT, client->name, sn);
 	if (ret)
 		pr_info("%s: request_irq failed, irq:%i\n", client_name, client->irq);
+	disable_irq(client->irq);
 
 	i2c_set_clientdata(client, sn);
 	sn->nb.notifier_call = sn_fb_event;
@@ -495,6 +577,7 @@ static int sn65dsi83_probe(struct i2c_client *client,
 	if (ret < 0)
 		pr_warn("failed to add sn65dsi83 sysfs files\n");
 
+	sn_prepare(sn);
 	dev_info(&client->dev, "succeeded\n");
 	return 0;
 }
