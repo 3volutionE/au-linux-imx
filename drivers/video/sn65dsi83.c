@@ -97,6 +97,7 @@ struct sn65dsi83_priv
 	struct gpio_desc	*gp_en;
 	struct clk		*mipi_clk;
 	struct notifier_block	nb;
+	u32			int_cnt;
 	u32			pixelclock;
 	u8			chip_enabled;
 	u8			show_reg;
@@ -368,8 +369,10 @@ static int sn_fb_event(struct notifier_block *nb, unsigned long event, void *dat
 		break;
 	}
 	case FB_EVENT_FB_REGISTERED : {
-		sn_prepare(sn);
-		sn_enable_pll(sn);
+		if (clk_get_rate(sn->mipi_clk)) {
+			sn_prepare(sn);
+			sn_enable_pll(sn);
+		}
 		break;
 	}
 	default:
@@ -395,7 +398,11 @@ static irqreturn_t sn_irq_handler(int irq, void *id)
 			sn_i2c_read_byte(sn, SN_IRQ_MASK));
 //		if (status & 1)
 //			sn_i2c_write_byte(sn, SN_SOFT_RESET, 1);
-		msleep(100);
+		if (sn->int_cnt++ > 10) {
+			disable_irq_nosync(sn->client->irq);
+		} else {
+			msleep(100);
+		}
 		return IRQ_HANDLED;
 	} else {
 		dev_err(&sn->client->dev, "%s: read error %d\n", __func__, status);
