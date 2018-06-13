@@ -4,60 +4,13 @@
 	mode-video;
 	mode-video-burst;
 /*	mode-video-hse; */
-#if 0
-	mipi-cmds-init = /bits/ 8 <
-		GEN_S1P(0x83,0x00)	/* Page 0 */
-		GEN_S1P(0x84,0x00)
-
-		GEN_S1P(0x8F,0xA5)
-		DELAY(5)
-		DCS_S0P(0x01)		/* Reset */
-		DELAY(20)
-		GEN_S1P(0x8F,0xA5)
-		GEN_S1P(0x83,0xAA)	/* Page 1 */
-		GEN_S1P(0x84,0x11)
-		GEN_S1P(0xA9,0x4B)
-
-		GEN_S1P(0x83,0x00)	/* Page 0 */
-		GEN_S1P(0x84,0x00)
-		GEN_S1P(0x8F,0x00)	/* Leave reset */
-
-		DELAY(50)
-		GEN_S1P(0x3A, 0x77)	/* Interface pixel format, 24 BPP */
-	>;
-	mipi-cmds-enable = /bits/ 8 <
-		DCS_S0P(0x11)		/* Exit sleep */
-		DELAY(120)		/* 5 is what spec says */
-		DCS_S0P(0x29)		/* MIPI_DCS_SET_DISPLAY_ON */
-		DELAY(20)
-	>;
-	mipi-cmds-disable = /bits/ 8 <
-		DCS_S0P(0x28)		/* MIPI_DCS_SET_DISPLAY_OFF */
-		DELAY(20)
-		DCS_S0P(0x10)		/* Enter sleep */
-	>;
-#endif
 	panel-width-mm = <217>;
 	panel-height-mm = <136>;
 	spwg;
 
 	display-timings {
 		t_dsi: t_dsi_default {
-/*
- * MHz
- * 32 good(PLL unlock), 33 squished (PLL unlock)
- * 34 good(PLL unlock), 35 squished (PLL unlock)
- * 36 good(PLL unlock), 37 squished (PLL unlock)
- * 38 good, 39 squished
- * 40-41 good, 42 squished
- * 43-44 good, 45 squished
- * 46-48 good, 49 squished
- * 50-52 good, 53 single line, 54 squished
- * 55-57 good, 58 single line, 59 squished,
- * 60-63 good, 64-65 single line, 66 squished,
- * 67-70 good, 71-73 blank, 74-75 squished,
- * 76-80 good
- */
+			/* 37 MHz, PLL unlock troubles */
 			clock-frequency = <70000000>;
 /*
  * m101nwwb
@@ -79,5 +32,8 @@
 			vfront-porch = <24>;	/* 3 : 99 */
 			hsync-len = <1>;	/* 1 : 256 */
 			vsync-len = <1>;	/* 1 : 128 */
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
 		};
 	};
