@@ -7,8 +7,24 @@
 
 #include "fsl-imx8mq.dtsi"
 
-#if 0
-#define MIPI_ON_DCSS
+#if 1
+#define HDMI_STATUS	"okay"
+#define HDMI_ENABLE
+#else
+#define HDMI_STATUS	"disabled"
+#endif
+
+#if 1
+#define MIPI_DSI_STATUS	"okay"
+#define MIPI_ENABLE
+#else
+#define MIPI_DSI_STATUS	"disabled"
+#endif
+
+#if defined(MIPI_ENABLE) && !defined(HDMI_ENABLE)
+#if 1
+#define MIPI_ON_DCSS	/* Otherwise mipi on LCDIF */
+#endif
 #endif
 
 #if 1
@@ -17,16 +33,10 @@
 #define RM68200
 #endif
 
-#if 1
-#define HDMI_STATUS	"okay"
+#ifdef MIPI_ON_DCSS
+#define MIPI_FB	<&fb_dcss>
 #else
-#define HDMI_STATUS	"disabled"
-#endif
-
-#if 0
-#define MIPI_DSI_STATUS	"okay"
-#else
-#define MIPI_DSI_STATUS	"disabled"
+#define MIPI_FB	<&lcdif>
 #endif
 
 &iomuxc {
@@ -490,7 +500,7 @@
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10>;
 		compatible = "pwm-backlight";
 		default-brightness-level = <8>;
-		display = <&fb_dcss>;
+		display = MIPI_FB;
 		pwms = <&pwm3 0 30000>;		/* 33.3 Khz */
 	};
 
@@ -649,23 +659,19 @@
 		 <&clk IMX8MQ_CLK_DISP_DTRC_DIV>;
 	clock-names = "apb", "axi", "rtrm", "pix_div", "pix_out", "dtrc";
 
-	assigned-clocks = <&clk IMX8MQ_CLK_DC_PIXEL_SRC>,
-			  <&clk IMX8MQ_CLK_DISP_AXI_SRC>,
+	assigned-clocks = <&clk IMX8MQ_CLK_DISP_AXI_SRC>,
 			  <&clk IMX8MQ_CLK_DISP_RTRM_SRC>,
 			  <&clk IMX8MQ_CLK_DISP_RTRM_PRE_DIV>,
-			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>,
-			  <&clk IMX8MQ_VIDEO_PLL1>;
-	assigned-clock-parents = <&clk IMX8MQ_VIDEO_PLL1_OUT>,
-				 <&clk IMX8MQ_SYS1_PLL_800M>,
-				 <&clk IMX8MQ_SYS1_PLL_800M>,
+			  <&clk IMX8MQ_CLK_DC_PIXEL_SRC>,
+			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>;
+	assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_800M>,
+				 <&clk IMX8MQ_VIDEO_PLL1_OUT>,
+				 <&clk IMX8MQ_CLK_DISP_RTRM_CG>,
 				 <&clk IMX8MQ_VIDEO_PLL1_OUT>,
 				 <&clk IMX8MQ_CLK_25M>;
-	assigned-clock-rates = <600000000>,
-			       <800000000>,
+	assigned-clock-rates = <800000000>,
 			       <400000000>,
-			       <400000000>,
-			       <0>,
-			       <599999999>;
+			       <400000000>;
 
 	dcss_disp0: port@0 {
 		reg = <0>;
@@ -905,7 +911,7 @@
 		clocks = <&mipi_dsi_phy 0>;
 		clock-names = "mipi_clk";
 		compatible = "ti,sn65dsi83";
-		display = <&fb_dcss>;
+		display = MIPI_FB;
 		display-dsi = <&fb_mipi_dsi>;
 		enable-gpios = GP_I2C4_SN65DSI83_EN;
 		interrupts-extended = GPIRQ_I2C4_SN65DSI83;
@@ -925,18 +931,26 @@
 
 };
 
+#if !defined(MIPI_ON_DCSS) && !defined(HDMI_ENABLE)
+/ {
+	display-subsystem {
+		status = "disabled";
+	};
+};
+
+&irqsteer_dcss {
+	status = "disabled";
+};
+#endif
+
 &lcdif {
 #ifndef MIPI_ON_DCSS
 	status = "okay";
 
 	assigned-clocks = <&clk IMX8MQ_CLK_LCDIF_PIXEL_SRC>,
-			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>,
-			  <&clk IMX8MQ_VIDEO_PLL1>;
+			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>;
 	assigned-clock-parents = <&clk IMX8MQ_VIDEO_PLL1_OUT>,
 				 <&clk IMX8MQ_CLK_25M>;
-	assigned-clock-rate = <120000000>,
-			      <0>,
-			      <599999999>;
 	max-res = <1920>, <1920>;
 
 	port@0 {
@@ -987,19 +1001,19 @@
 	status = MIPI_DSI_STATUS;
 #ifndef MIPI_ON_DCSS
 	as_bridge;
-	sync-pol = <1>;
 #endif
-	assigned-clocks = <&clk IMX8MQ_CLK_DSI_PHY_REF_SRC>,
-			  <&clk IMX8MQ_CLK_DSI_CORE_SRC>,
-			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>,
-			  <&clk IMX8MQ_VIDEO_PLL1>;
-	assigned-clock-parents = <&clk IMX8MQ_VIDEO_PLL1_OUT>,
-				 <&clk IMX8MQ_SYS1_PLL_266M>,
+	assigned-clocks = <&clk IMX8MQ_CLK_DSI_CORE_SRC>,
+			  <&clk IMX8MQ_CLK_DSI_PHY_REF_SRC>,
+			  <&clk IMX8MQ_VIDEO_PLL1_REF_SEL>;
+	assigned-clock-parents = <&clk IMX8MQ_SYS1_PLL_266M>,
+				 <&clk IMX8MQ_VIDEO_PLL1_OUT>,
 				 <&clk IMX8MQ_CLK_25M>;
-	assigned-clock-rates = <24000000>,
-			       <266000000>,
-			       <0>,
-			       <599999999>;
+	assigned-clock-rates = <266000000>;
+
+	clocks = <&clk IMX8MQ_CLK_DSI_CORE_DIV>,
+		 <&clk IMX8MQ_CLK_DSI_PHY_REF_DIV>,
+		 <&clk IMX8MQ_VIDEO_PLL1>;
+	clock-names = "core", "phy_ref", "pixel_pll";
 
 	port@1 {
 		mipi_dsi_in: endpoint {
@@ -1016,12 +1030,16 @@
 	status = MIPI_DSI_STATUS;
 
 	fb_mipi_dsi: panel@0 {
-		compatible = "panel,simple";
-		reg = <0>;
 		bits-per-color = <8>;
+#ifndef MIPI_ON_DCSS
+		bridge-de-active = <0>;
+		bridge-sync-active = <1>;
+#endif
 		bus-format = "rgb888";
+		compatible = "panel,simple";
 		dsi-format = "rgb888";
 		power-supply = <&reg_vref_5v>;
+		reg = <0>;
 
 #ifdef RM68200
 #include "panel-osd050t3236.dtsi"
