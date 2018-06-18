@@ -45,24 +45,6 @@
 		>;
 	};
 
-	pinctrl_csi1: csi1grp {
-		fsl,pins = <
-#define GP_CSI1_MIPI_PWDN	<&gpio3 3 GPIO_ACTIVE_HIGH>
-			MX8MQ_IOMUXC_NAND_CE2_B_GPIO3_IO3		0x19
-#define GP_CSI1_MIPI_RESET	<&gpio3 17 GPIO_ACTIVE_HIGH>
-			MX8MQ_IOMUXC_NAND_WE_B_GPIO3_IO17		0x19
-		>;
-	};
-
-	pinctrl_csi2: csi2grp {
-		fsl,pins = <
-#define GP_CSI2_MIPI_PWDN	<&gpio3 2 GPIO_ACTIVE_HIGH>
-			MX8MQ_IOMUXC_NAND_CE1_B_GPIO3_IO2		0x19
-#define GP_CSI2_MIPI_RESET	<&gpio2 19 GPIO_ACTIVE_HIGH>
-			MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19		0x19
-		>;
-	};
-
 	pinctrl_ecspi2: ecspi2grp {
 		fsl,pins = <
 			/* J17 */
@@ -192,6 +174,24 @@
 		fsl,pins = <
 			MX8MQ_IOMUXC_I2C2_SCL_I2C2_SCL			0x4000007f
 			MX8MQ_IOMUXC_I2C2_SDA_I2C2_SDA			0x4000007f
+		>;
+	};
+
+	pinctrl_i2c2_csi1: i2c2-csi1grp {
+		fsl,pins = <
+#define GP_CSI1_MIPI_PWDN	<&gpio3 3 GPIO_ACTIVE_HIGH>
+			MX8MQ_IOMUXC_NAND_CE2_B_GPIO3_IO3		0x59
+#define GP_CSI1_MIPI_RESET	<&gpio3 17 GPIO_ACTIVE_LOW>
+			MX8MQ_IOMUXC_NAND_WE_B_GPIO3_IO17		0x19
+		>;
+	};
+
+	pinctrl_i2c3_csi2: i2c3-csi2grp {
+		fsl,pins = <
+#define GP_CSI2_MIPI_PWDN	<&gpio3 2 GPIO_ACTIVE_HIGH>
+			MX8MQ_IOMUXC_NAND_CE1_B_GPIO3_IO2		0x59
+#define GP_CSI2_MIPI_RESET	<&gpio2 19 GPIO_ACTIVE_LOW>
+			MX8MQ_IOMUXC_SD2_RESET_B_GPIO2_IO19		0x19
 		>;
 	};
 
@@ -823,7 +823,7 @@
 		reg = <0x3c>;
 		status = "okay";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi1>;
+		pinctrl-0 = <&pinctrl_i2c2_csi1>;
 		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
 		csi_id = <0>;
@@ -857,7 +857,7 @@
 		reg = <0x3c>;
 		status = "okay";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_csi2>;
+		pinctrl-0 = <&pinctrl_i2c3_csi2>;
 		clocks = <&mipi_mclk>;
 		clock-names = "csi_mclk";
 		csi_id = <1>;
