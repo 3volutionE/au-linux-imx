@@ -819,7 +819,7 @@
 	status = "okay";
 
 	ov5640-mipi1@3c {
-		compatible = "ovti,ov5640_mipi";
+		compatible = "ov5640_v3";
 		reg = <0x3c>;
 		status = "okay";
 		pinctrl-names = "default";
@@ -831,6 +831,7 @@
 		rst-gpios = GP_CSI1_MIPI_RESET;
 		mclk = <22000000>;
 		mclk_source = <0>;
+		mipi_csi;
 
 		port {
 			ov5640_mipi1_ep: endpoint {
@@ -853,7 +854,7 @@
 	status = "okay";
 
 	ov5640-mipi2@3c {
-		compatible = "ovti,ov5640_mipi";
+		compatible = "ov5640_v3";
 		reg = <0x3c>;
 		status = "okay";
 		pinctrl-names = "default";
@@ -865,6 +866,8 @@
 		rst-gpios = GP_CSI2_MIPI_RESET;
 		mclk = <22000000>;
 		mclk_source = <0>;
+		mipi_csi;
+
 		port {
 			ov5640_mipi2_ep: endpoint {
 				remote-endpoint = <&mipi2_sensor_ep>;
