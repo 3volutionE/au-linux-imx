@@ -131,6 +131,14 @@
 	status = "disabled";
 };
 
+&ecspi2 {
+	/delete-property/ interrupt-parent;
+};
+
+&ecspi3 {
+	/delete-property/ interrupt-parent;
+};
+
 &gpio1 {
 	status = "disabled";
 };
