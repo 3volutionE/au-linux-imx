@@ -36,14 +36,6 @@
 			 IMX8MQ_CLK_NAND_USDHC_BUS_CG>;
 };
 
-&ecspi2 {
-	/delete-property/ interrupt-parent;
-};
-
-&ecspi3 {
-	/delete-property/ interrupt-parent;
-};
-
 &iomuxc {
 	imx8mq-evk {
 		/*
