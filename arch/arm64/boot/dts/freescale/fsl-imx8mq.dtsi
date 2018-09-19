@@ -852,7 +852,6 @@
 		clocks = <&clk IMX8MQ_CLK_ECSPI2_ROOT>,
 			 <&clk IMX8MQ_CLK_ECSPI2_ROOT>;
 		clock-names = "ipg", "per";
-		interrupt-parent = <&gpc>;
 		status = "disabled";
 	};
 
@@ -863,7 +862,6 @@
 		clocks = <&clk IMX8MQ_CLK_ECSPI3_ROOT>,
 			 <&clk IMX8MQ_CLK_ECSPI3_ROOT>;
 		clock-names = "ipg", "per";
-		interrupt-parent = <&gpc>;
 		status = "disabled";
 	};
 
