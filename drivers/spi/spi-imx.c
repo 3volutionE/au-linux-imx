@@ -1381,11 +1381,11 @@ static int spi_imx_probe(struct platform_device *pdev)
 	master->bits_per_word_mask = SPI_BPW_RANGE_MASK(1, 32);
 	master->bus_num = np ? -1 : pdev->id;
 	master->num_chipselect = num_cs;
-	spi_imx->speed_hz = speed_hz;
 
 	spi_imx = spi_master_get_devdata(master);
 	spi_imx->bitbang.master = master;
 	spi_imx->dev = &pdev->dev;
+	spi_imx->speed_hz = speed_hz;
 
 	ret = of_property_read_u32(np, "idle-state", &idle_state);
 	if (ret >= 0) {
