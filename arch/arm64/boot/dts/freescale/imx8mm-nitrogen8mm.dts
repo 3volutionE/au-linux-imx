@@ -72,6 +72,7 @@
 	pinctrl_hog: hoggrp {
 		fsl,pins = <
 			/* TODO expansion connector pinmux */
+			MX8MM_IOMUXC_GPIO1_IO08_GPIO1_IO8		0x1d6
 		>;
 	};
 
@@ -84,8 +85,7 @@
 
 	pinctrl_i2c1_pf8100: i2c1-pf8100grp {
 		fsl,pins = <
-#define GP_I2C1_PF8100_WDI	<&gpio4 22 GPIO_ACTIVE_LOW>
-			MX8MM_IOMUXC_SAI2_RXC_GPIO4_IO22		0x149
+			MX8MM_IOMUXC_GPIO1_IO02_WDOG1_WDOG_B		0x149
 #define GP_I2C1_PF8100_EWARN	<&gpio3 3 GPIO_ACTIVE_LOW>
 			MX8MM_IOMUXC_NAND_CE2_B_GPIO3_IO3		0x149
 #define GP_I2C1_PF8100_FAULT	<&gpio3 4 GPIO_ACTIVE_LOW>
@@ -162,8 +162,8 @@
 
 	pinctrl_pcie0: pcie0grp {
 		fsl,pins = <
-#define GP_PCIE0_RESET		<&gpio1 2 GPIO_ACTIVE_LOW>
-			MX8MM_IOMUXC_GPIO1_IO02_GPIO1_IO2	0x16
+#define GP_PCIE0_RESET		<&gpio4 23 GPIO_ACTIVE_LOW>	/* fixme later */
+			MX8MM_IOMUXC_SAI2_RXC_GPIO4_IO22	0x16
 #define GP_PCIE0_DISABLE	<&gpio1 5 GPIO_ACTIVE_LOW>
 			MX8MM_IOMUXC_GPIO1_IO05_GPIO1_IO5	0x16
 		>;
@@ -193,10 +193,10 @@
 		>;
 	};
 
-	pinctrl_reg_usbotg_vbus: reg-usbotg-vbusgrp {
+	pinctrl_reg_usdhc2_vqmmc: reg_usdhc2_vqmmcgrp {
 		fsl,pins = <
-#define GP_REG_USB_OTG_VBUS	<&gpio1 14 GPIO_ACTIVE_HIGH>
-			MX8MM_IOMUXC_GPIO1_IO14_GPIO1_IO14	0x16
+#define GP_USDHC2_VSEL	<&gpio3 2 GPIO_ACTIVE_HIGH>
+			MX8MM_IOMUXC_NAND_CE1_B_GPIO3_IO2	0x16
 		>;
 	};
 
@@ -283,12 +283,14 @@
 
 	pinctrl_usbotg1: usbotg1grp {
 		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO12_USB1_OTG_PWR		0x16
 			MX8MM_IOMUXC_GPIO1_IO13_USB1_OTG_OC		0x16
 		>;
 	};
 
 	pinctrl_usbotg2: usbotg2grp {
 		fsl,pins = <
+			MX8MM_IOMUXC_GPIO1_IO14_USB2_OTG_PWR		0x16
 			MX8MM_IOMUXC_GPIO1_IO15_USB2_OTG_OC		0x16
 		>;
 	};
@@ -348,8 +350,7 @@
 			MX8MM_IOMUXC_SD2_DATA1_USDHC2_DATA1		0x1d0
 			MX8MM_IOMUXC_SD2_DATA2_USDHC2_DATA2		0x1d0
 			MX8MM_IOMUXC_SD2_DATA3_USDHC2_DATA3		0x1d0
-			MX8MM_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0x1d0
-#define GP_SD2_CD	<&gpio2 12 GPIO_ACTIVE_LOW>
+#define GP_USDHC2_CD	<&gpio2 12 GPIO_ACTIVE_LOW>
 			MX8MM_IOMUXC_SD2_CD_B_GPIO2_IO12		0x1c4
 		>;
 	};
@@ -362,7 +363,6 @@
 			MX8MM_IOMUXC_SD2_DATA1_USDHC2_DATA1		0x1d4
 			MX8MM_IOMUXC_SD2_DATA2_USDHC2_DATA2		0x1d4
 			MX8MM_IOMUXC_SD2_DATA3_USDHC2_DATA3		0x1d4
-			MX8MM_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0x1d0
 		>;
 	};
 
@@ -374,7 +374,6 @@
 			MX8MM_IOMUXC_SD2_DATA1_USDHC2_DATA1		0x1d6
 			MX8MM_IOMUXC_SD2_DATA2_USDHC2_DATA2		0x1d6
 			MX8MM_IOMUXC_SD2_DATA3_USDHC2_DATA3		0x1d6
-			MX8MM_IOMUXC_GPIO1_IO04_USDHC2_VSELECT		0x1d0
 		>;
 	};
 
@@ -441,9 +440,9 @@
 		brightness-levels = <0 1 2 3 4 5 6 7 8 9 10>;
 		compatible = "pwm-backlight";
 		default-brightness-level = <8>;
-		display = <&lcdif>;
+		display = <&display_subsystem>;
 		pwms = <&pwm3 0 30000>;		/* 33.3 Khz */
-		status = "disabled";
+		status = "okay";
 	};
 
 	bt-rfkill {
@@ -456,15 +455,19 @@
 		status = "okay";
 	};
 
-	reg_usb_otg_vbus: regulator-usb-otg-vbus {
-		compatible = "regulator-fixed";
+	reg_usdhc2_vqmmc: regulator-usdhc2-vqmmc {
+		compatible = "regulator-gpio";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_reg_usbotg_vbus>;
-		regulator-name = "usb_otg_vbus";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		gpio = GP_REG_USB_OTG_VBUS;
-		enable-active-high;
+		pinctrl-0 = <&pinctrl_reg_usdhc2_vqmmc>;
+		regulator-name = "reg_sd2_vsel";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <3300000>;
+		regulator-type = "voltage";
+		regulator-boot-on;
+		regulator-always-on;
+		gpios = GP_USDHC2_VSEL;
+		states = <1800000 0x1
+			  3300000 0x0>;
 	};
 
 	reg_vref_0v9: regulator-vref-0v9 {
@@ -607,8 +610,103 @@
 	status = "okay";
 
 	pf8100@08 {
-		/* TODO */
+		compatible = "nxp,pf8x00";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_i2c1_pf8100>;
 		reg = <0x08>;
+
+		regulators {
+			reg_ldo1: ldo1 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <5000000>;
+				regulator-min-microvolt = <1500000>;
+			};
+
+			reg_ldo2: ldo2 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <5000000>;
+				regulator-min-microvolt = <1500000>;
+#if 0
+				/* vselect low is 3.3V, high is 1.8V */
+				vselect-en;
+#endif
+			};
+
+			reg_ldo3: ldo3 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <5000000>;
+				regulator-min-microvolt = <1500000>;
+			};
+
+			reg_ldo4: ldo4 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <5000000>;
+				regulator-min-microvolt = <1500000>;
+			};
+
+			reg_sw1: sw1 {
+				phase = <0>;
+				ilim-ma = <4500>;
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+			};
+
+			reg_sw2: sw2 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+			};
+
+			reg_sw3: sw3 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+			};
+
+			reg_sw4: sw4 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+				dual-phase;
+			};
+
+			reg_sw5: sw5 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+			};
+
+			reg_sw6: sw6 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <1800000>;
+				regulator-min-microvolt =  <400000>;
+			};
+
+			reg_sw7: sw7 {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <4100000>;
+				regulator-min-microvolt = <1000000>;
+			};
+
+			reg_vsnvs: vsnvs {
+				regulator-always-on;
+				regulator-boot-on;
+				regulator-max-microvolt = <3300000>;
+				regulator-min-microvolt = <1800000>;
+			};
+		};
 	};
 };
 
@@ -633,14 +731,14 @@
 		clocks = <&mipi_dsi 0>;
 		clock-names = "mipi_clk";
 		compatible = "ti,sn65dsi83";
-		display = <&lcdif>;
+		display = <&display_subsystem>;
 		display-dsi = <&fb_mipi>;
 		enable-gpios = GP_I2C2_SN65DSI83_EN;
 		interrupts-extended = GPIRQ_I2C2_SN65DSI83;
 		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_i2c2_sn65dsi83>;
 		reg = <0x2c>;
-		status = "disabled";
+		status = "okay";
 	};
 
 	touchscreen@38 {
@@ -725,6 +823,19 @@
 };
 
 &mipi_dsi {
+	assigned-clocks = <&clk IMX8MM_CLK_DSI_CORE_SRC>,
+			  <&clk IMX8MM_CLK_DSI_PHY_REF_SRC>,
+			  <&clk IMX8MM_VIDEO_PLL1_REF_SEL>,
+			  <&clk IMX8MM_CLK_LCDIF_PIXEL_DIV>;
+	assigned-clock-parents = <&clk IMX8MM_SYS_PLL1_266M>,
+				 <&clk IMX8MM_VIDEO_PLL1_OUT>,
+				 <&clk IMX8MM_CLK_24M>;
+	assigned-clock-rates = <266000000>, <0>, <0>, <66000000>;
+
+	clocks = <&clk IMX8MM_CLK_DSI_CORE_DIV>,
+		 <&clk IMX8MM_CLK_DSI_PHY_REF_DIV>,
+		 <&clk IMX8MM_CLK_LCDIF_PIXEL_DIV>;
+	clock-names = "cfg", "pll-ref", "pixel_clock";
 	status = "okay";
 
 	fb_mipi: panel@0 {
@@ -735,9 +846,16 @@
 		compatible = "panel,simple";
 		dsi-format = "rgb888";
 		dsi-lanes = <4>;
+#if 0
+		mipi-cmds = <&mipi_cmds_ltk080a60a004t>;
+#endif
 		mode-skip-eot;
 		mode-video;
+#if 1
 		mode-video-burst;
+#else
+		mode-video-sync-pulse;
+#endif
 		panel-height-mm = <136>;
 		panel-width-mm = <217>;
 		power-supply = <&reg_vref_5v>;
@@ -747,7 +865,7 @@
 		display-timings {
 			t_mipi: t-dsi-default {
 				/* m101nwwb by default */
-				clock-frequency = <70000000>;
+				clock-frequency = <66000000>;
 				hactive = <1280>;
 				vactive = <800>;
 				hback-porch = <5>;
@@ -866,14 +984,16 @@
 &usbotg1 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg1>;
-	dr_mode = "host";
+	power-polarity-active-high;
+	dr_mode = "otg";
 	status = "okay";
 };
 
 &usbotg2 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_usbotg2>;
-	dr_mode = "otg";
+	power-polarity-active-high;
+	dr_mode = "host";
 	status = "okay";
 };
 
@@ -895,9 +1015,13 @@
 	pinctrl-0 = <&pinctrl_usdhc2>;
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>;
-	cd-gpios = GP_SD2_CD;
+	cd-gpios = GP_USDHC2_CD;
 	bus-width = <4>;
-	/* vmmc-supply = <&reg_usdhc2_vmmc>; TODO */
+#if 0
+	vqmmc-supply = <&reg_usdhc2_vqmmc>;
+#else
+	vqmmc-supply = <&reg_ldo2>;
+#endif
 	status = "okay";
 };
 
