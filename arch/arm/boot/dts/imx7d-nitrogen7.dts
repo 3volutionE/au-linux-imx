@@ -596,8 +596,6 @@
 			compatible = "regulator-fixed";
 			regulator-min-microvolt = <3300000>;
 			regulator-max-microvolt = <3300000>;
-			clocks = <&clks IMX7D_CLKO2_ROOT_DIV>;
-			clock-names = "slow";
 			regulator-name = "reg_wlan";
 			startup-delay-us = <70000>;
 			gpio = <&gpio4 21 GPIO_ACTIVE_HIGH>;
@@ -627,6 +625,12 @@
 				  <&clks IMX7D_AUDIO_MCLK_ROOT_CLK>;
 		assigned-clock-parents = <&clks IMX7D_PLL_AUDIO_POST_DIV>;
 		assigned-clock-rates = <0>, <12288000>;
+	};
+
+	usdhc2_pwrseq: usdhc2_pwrseq {
+		compatible = "mmc-pwrseq-simple";
+		clocks = <&clks IMX7D_CLKO2_ROOT_DIV>;
+		clock-names = "ext_clock";
 	};
 };
 
@@ -1077,6 +1081,7 @@
 	pinctrl-1 = <&pinctrl_usdhc2_100mhz>;
 	pinctrl-2 = <&pinctrl_usdhc2_200mhz>;
 	bus-width = <4>;
+	mmc-pwrseq = <&usdhc2_pwrseq>;
 	non-removable;
 	vmmc-supply = <&reg_wlan>;
 	vqmmc-1-8-v;
