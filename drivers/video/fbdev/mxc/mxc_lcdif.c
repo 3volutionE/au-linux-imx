@@ -333,7 +333,20 @@ static struct fb_videomode lcdif_modedb[] = {
 	  FB_SYNC_HOR_HIGH_ACT | FB_SYNC_VERT_HIGH_ACT,
 	  FB_VMODE_INTERLACED,
 	  FB_MODE_IS_DETAILED,},
+
+	  /* ADDED BY AU-CE */
+  	{
+	  /* Bluechups 4.7 Inch display for BEST project */
+	  	"BLUECHIPS_RGB_47", 60, 480, 272, 1000000000000ULL / ((480+43+8+1)*(272+4+12+10)*60),
+		.left_margin = 41, .right_margin = 8,
+		.upper_margin = 4, .lower_margin = 12,
+		.hsync_len = 1, .vsync_len = 10,
+		.sync = 0,
+		.vmode = FB_VMODE_NONINTERLACED,
+		.flag = 0,},
+	/* END EDIT BY AU-CE */
 };
+
 static int lcdif_modedb_sz = ARRAY_SIZE(lcdif_modedb);
 
 static int lcdif_init(struct mxc_dispdrv_handle *disp,
